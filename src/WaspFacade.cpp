@@ -127,16 +127,16 @@ WaspFacade::solveQueryClaspApproach()
     }
     else
     {
-        assert( clauseFromModel != NULL );
-        printLowerEstimate();
+        assert( clauseFromModel != NULL );        
+        cerr << "Enumerated Models: " << numberOfModels << endl;
+
+        cout << "Cautious consequences:" << endl;
+        for( unsigned int i = 0; i < solver.getLowerEstimate().size(); i++ )
+            cout << *solver.getLowerEstimate()[ i ] << " ";
         
         for( unsigned int i = 0; i < clauseFromModel->size(); i++ )
-        {
-            cout << " " << *clauseFromModel->getAt( i ).getVariable();
-        }
+            cout << *clauseFromModel->getAt( i ).getVariable() << " ";
         cout << endl;
-
-        cerr << "Enumerated Models: " << numberOfModels << endl;
     }
 }
 
@@ -226,6 +226,13 @@ WaspFacade::solveQueryWaspApproach()
     {
         trace_msg( enumeration, 1, "No model found." );
         solver.foundIncoherence();
+    }
+    else
+    {
+        cout << "Cautious consequences:" << endl;
+        for( unsigned int i = 0; i < solver.getLowerEstimate().size(); i++ )
+            cout << *solver.getLowerEstimate()[ i ] << " ";
+        cout << endl;
     }
 }
 
@@ -355,6 +362,7 @@ WaspFacade::claspApproachForQuery()
         if( clauseFromModel->size() > 1 )
             clauseFromModel->detachClause();
 
+        unsigned int size = solver.getLowerEstimate().size();
         for( unsigned int i = 0; i < clauseFromModel->size(); )
         {
             Variable* var = clauseFromModel->getAt( i ).getVariable();
@@ -388,6 +396,9 @@ WaspFacade::claspApproachForQuery()
                 i++;
             }
         }
+        
+        if( size < solver.getLowerEstimate().size() )
+            solver.printLowerEstimate();
 
         if( clauseFromModel->size() > 1 )
         {    

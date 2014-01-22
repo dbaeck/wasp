@@ -258,7 +258,8 @@ Solver::solve()
         }
 
         assert( !conflictDetected() );
-        chooseLiteral();
+        if( !chooseLiteral() )
+            return false;
         
         while( hasNextVariableToPropagate() )
         {

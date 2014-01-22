@@ -100,7 +100,7 @@ class Solver
         inline void foundEmptyClause(){ conflictAtLevelZero = true; }
         inline bool analyzeConflict();
         inline void clearConflictStatus();
-        inline void chooseLiteral();
+        inline bool chooseLiteral();
         inline bool conflictDetected();
         inline void foundIncoherence();
         inline bool hasUndefinedLiterals();
@@ -564,7 +564,7 @@ Solver::foundIncoherence()
     outputBuilder->onProgramIncoherent();
 }
 
-void
+bool
 Solver::chooseLiteral()
 {
     Literal choice;
@@ -604,6 +604,9 @@ Solver::chooseLiteral()
         if( oldSize != lowerEstimate.size() )
             printLowerEstimate();
         
+        if( preferredChoices.empty() )
+            return false;
+        
         //random_shuffle( preferredChoices.begin(), preferredChoices.end() );
         choice = minisatHeuristic.makeAChoice( preferredChoices );
     }
@@ -614,6 +617,8 @@ Solver::chooseLiteral()
     trace( solving, 1, "Choice: %s.\n", toString( choice ).c_str() );
     setAChoice( choice );    
     statistics( onChoice() );
+    
+    return true;
 }
 
 bool
