@@ -86,6 +86,16 @@ MinisatHeuristic::makeAChoice()
     return Literal( chosenVariable, NEGATIVE );
 }
 
+Literal
+MinisatHeuristic::makeAChoice(
+    vector< Variable* >& preferredChoices )
+{
+    assert( !preferredChoices.empty() );
+    
+    assert( preferredChoices[ 0 ]->isUndefined() );
+    return Literal( preferredChoices[ 0 ], NEGATIVE );    
+}
+
 // Returns a random float 0 <= x < 1. Seed must never be 0.
 inline double drand( double& seed )
 {

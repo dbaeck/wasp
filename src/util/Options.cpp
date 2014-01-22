@@ -77,6 +77,7 @@ namespace wasp
 #define OPTIONID_stdin ( 'z' + 100 )
 #define OPTIONID_time_limit ( 'z' + 101 )
 #define OPTIONID_max_cost ( 'z' + 102 )
+#define OPTIONID_query ( 'z' + 103 )
     
 #ifdef TRACE_ON
 TraceLevels Options::traceLevels;
@@ -110,6 +111,8 @@ unsigned int Options::maxModels = 1;
 unsigned int Options::deletionThreshold = 8;
 
 unsigned int Options::maxCost = MAXUNSIGNEDINT;
+
+unsigned int Options::query = NOQUERY;
     
 void
 Options::parse(
@@ -173,6 +176,7 @@ Options::parse(
                 { "stdin", no_argument, NULL, OPTIONID_stdin },
                 { "time-limit", required_argument, NULL, OPTIONID_time_limit },
                 { "max-cost", required_argument, NULL, OPTIONID_max_cost },
+                { "query", optional_argument, NULL, OPTIONID_query },
 
                 // The NULL-option indicates the end of the array.
                 { NULL, 0, NULL, 0 }
@@ -335,6 +339,16 @@ Options::parse(
                 outputPolicy = DIMACS_OUTPUT;
                 break; 
                 
+            case OPTIONID_query:
+                query = WASPQUERY;
+                if( optarg )
+                {
+                    query = atoi( optarg );
+                    if( query > CLASPQUERY )
+                        query = WASPQUERY;
+                }
+                break;
+                
             case OPTIONID_help:
                 Help::printHelp();
                 exit( 0 );
@@ -378,6 +392,7 @@ Options::setOptions(
     waspFacade.setRestartsPolicy( restartsPolicy, restartsThreshold );
     waspFacade.setMaxModels( maxModels );
     waspFacade.setPrintProgram( printProgram );
+    waspFacade.setQuery( query );
 }
 
 };

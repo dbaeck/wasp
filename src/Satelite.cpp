@@ -613,7 +613,7 @@ Satelite::simplificationsMinisat2()
         while( !elim_heap.empty() )
         {
             Variable* v = elim_heap.removeMin();
-            if( !v->isUndefined() || v->hasBeenEliminated() )
+            if( !v->isUndefined() || v->hasBeenEliminated() || !VariableNames::isHidden( v ) )
                 continue;
             
             if( !eliminateVariable( v ) )

@@ -64,6 +64,7 @@ class Solver
         inline bool addClauseFromModel( Clause* clause );
         inline void addLearnedClause( Clause* learnedClause );
         bool addClauseFromModelAndRestart();
+        Clause* computeClauseFromModel();
         
         inline Literal getLiteral( int lit );
         inline Variable* getVariable( unsigned int var );
@@ -167,6 +168,17 @@ class Solver
         inline Clause* newClause();
         inline void releaseClause( Clause* clause );
         
+        inline void setQuery( unsigned int q ) { this->query = q; }
+        
+        inline void addPreferredChoice( Variable* var ) { preferredChoices.push_back( var ); }
+        inline vector< Variable* >& getPreferredChoices() { return preferredChoices; }
+        
+        inline void addVariableInLowerEstimate( Variable* var ) { lowerEstimate.push_back( var ); }
+        inline vector< Variable* >& getLowerEstimate() { return lowerEstimate; }
+        
+        inline void printLowerEstimate();
+        inline void printUpperEstimate();
+        
     private:
         inline Variable* addVariableInternal();
         
@@ -203,9 +215,13 @@ class Solver
         uint64_t literalsInClauses;
         uint64_t literalsInLearnedClauses;
         
+        unsigned int query;
 
         vector< Variable* > eliminatedVariables;
         vector< Clause* > poolOfClauses;
+        
+        vector< Variable* > preferredChoices;
+        vector< Variable* > lowerEstimate;
 
         struct DeletionCounters
         {
@@ -247,7 +263,8 @@ Solver::Solver()
     assignedVariablesAtLevelZero( MAXUNSIGNEDINT ),
     nextValueOfPropagation( 0 ),
     literalsInClauses( 0 ),
-    literalsInLearnedClauses( 0 )    
+    literalsInLearnedClauses( 0 ),
+    query( NOQUERY )
 {
     satelite = new Satelite( *this );
     deletionCounters.init();
@@ -550,7 +567,50 @@ Solver::foundIncoherence()
 void
 Solver::chooseLiteral()
 {
-    Literal choice = minisatHeuristic.makeAChoice();
+    Literal choice;
+    if( query == WASPQUERY && currentDecisionLevel == 0 )
+    {
+        assert( !preferredChoices.empty() );        
+
+        unsigned int oldSize = lowerEstimate.size();
+        Activity maxAct = 0;
+        unsigned int maxIndex = 0;
+
+        for( unsigned int i = 0; i < preferredChoices.size(); )
+        {
+            Variable* var = preferredChoices[ i ];
+            if( !var->isUndefined() )
+            {
+                assert( var->getDecisionLevel() == 0 );                    
+                if( var->isTrue() )
+                    lowerEstimate.push_back( var );
+
+                preferredChoices[ i ] = preferredChoices.back();
+                preferredChoices.pop_back();
+            }
+            else
+            {
+                if( preferredChoices[ i ]->activity() > maxAct )
+                {
+                    maxAct = preferredChoices[ i ]->activity();
+                    maxIndex = i;
+                }
+                ++i;
+            }
+        }
+
+        swap( preferredChoices[ maxIndex ], preferredChoices[ 0 ] );
+        
+        if( oldSize != lowerEstimate.size() )
+            printLowerEstimate();
+        
+        //random_shuffle( preferredChoices.begin(), preferredChoices.end() );
+        choice = minisatHeuristic.makeAChoice( preferredChoices );
+    }
+    else
+    {
+        choice = minisatHeuristic.makeAChoice();
+    }
     trace( solving, 1, "Choice: %s.\n", toString( choice ).c_str() );
     setAChoice( choice );    
     statistics( onChoice() );
@@ -891,8 +951,27 @@ void
 Solver::releaseClause(
     Clause* clause )
 {
+    assert( find( poolOfClauses.begin(), poolOfClauses.end(), clause ) == poolOfClauses.end() );
     clause->free();    
     poolOfClauses.push_back( clause );
+}
+
+void
+Solver::printLowerEstimate()
+{
+    cout << "Certain answers:" << endl;
+    for( unsigned int i = 0; i < lowerEstimate.size(); i++ )
+        cout << *lowerEstimate[ i ] << " ";
+    cout << endl;
+}
+
+void
+Solver::printUpperEstimate()
+{
+    cout << "Possible answers:" << endl;
+    for( unsigned int i = 0; i < preferredChoices.size(); i++ )
+        cout << *preferredChoices[ i ] << " ";
+    cout << endl;
 }
 
 #endif	/* SOLVER_H */

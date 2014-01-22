@@ -16,6 +16,8 @@
  *
  */
 
+#include <stdint.h>
+
 #include "WaspFacade.h"
 
 #include "Restart.h"
@@ -51,11 +53,24 @@ WaspFacade::solve()
         solver.printProgram();
         return;
     }
+
+    if( claspQuery() )
+    {
+        solveQueryClaspApproach();
+        return;
+    }
+    else if( waspQuery() )
+    {
+        solveQueryWaspApproach();
+        return;
+    }
     
-    solver.init();
+    assert( !hasQuery() );
+    
+    solver.init();     
     
     if( solver.preprocessing() )
-    {
+    {        
         while( solver.solve() )
         {
             solver.printAnswerSet();
@@ -65,12 +80,146 @@ WaspFacade::solve()
                 trace_msg( enumeration, 1, "Enumerated " << maxModels << "." );
                 break;
             }
-            else if( !solver.addClauseFromModelAndRestart() )
+            else
             {
-                trace_msg( enumeration, 1, "All models have been found." );
-                break;
+                if( !solver.addClauseFromModelAndRestart() )
+                {
+                    trace_msg( enumeration, 1, "All models have been found." );
+                    break;
+                }                
             }
         }
+    }
+
+    if( numberOfModels == 0 )
+    {
+        trace_msg( enumeration, 1, "No model found." );
+        solver.foundIncoherence();
+    }
+}
+
+void
+WaspFacade::solveQueryClaspApproach()
+{
+    assert( claspQuery() );
+    solver.init();
+
+    if( solver.preprocessing() )
+    {
+        computeLowerEstimate();
+        cerr << "Answers from well founded: " << solver.getLowerEstimate().size() << endl;
+        
+        printLowerEstimate();
+
+        while( solver.solve() )
+        {
+            ++numberOfModels;
+
+            if( !claspApproachForQuery() )
+                break;            
+        }
+    }
+
+    if( numberOfModels == 0 )
+    {
+        trace_msg( enumeration, 1, "No model found." );
+        solver.foundIncoherence();
+    }
+    else
+    {
+        assert( clauseFromModel != NULL );
+        printLowerEstimate();
+        
+        for( unsigned int i = 0; i < clauseFromModel->size(); i++ )
+        {
+            cout << " " << *clauseFromModel->getAt( i ).getVariable();
+        }
+        cout << endl;
+
+        cerr << "Enumerated Models: " << numberOfModels << endl;
+    }
+}
+
+void
+WaspFacade::solveQueryWaspApproach()
+{
+    assert( waspQuery() );
+    solver.init();
+
+    if( solver.preprocessing() )
+    {
+        for( unsigned int i = 1; i <= solver.numberOfVariables(); i++ )
+        {
+            Variable* var = solver.getVariable( i );
+            if( !VariableNames::isHidden( var ) )
+            {
+                assert( !var->hasBeenEliminated() );
+                if( var->isTrue() )
+                {
+                    assert( var->getDecisionLevel() == 0 );
+                    solver.addVariableInLowerEstimate( var );
+                }
+                else if( var->isUndefined() )
+                    solver.addPreferredChoice( var );
+            }
+        }
+
+        uint64_t lowerEstimateSize = solver.getLowerEstimate().size();
+        uint64_t upperEstimateSize = solver.getPreferredChoices().size();
+        uint64_t diff = 0;
+        cerr << "Answers from well founded: " << lowerEstimateSize << endl;
+        cerr << "Number of atoms to try: " << upperEstimateSize << endl;        
+        
+        printLowerEstimate();
+        solver.printUpperEstimate();
+
+        while( !solver.getPreferredChoices().empty() )
+        {
+            if( solver.solve() )
+            {
+                ++numberOfModels;
+                vector< Variable* >& upperEstimate = solver.getPreferredChoices();
+                for( unsigned int i = 0; i < upperEstimate.size(); )
+                {
+                    Variable* var = upperEstimate[ i ];
+                    assert( !var->isUndefined() );
+                    if( !var->isTrue() )
+                    {
+                        upperEstimate[ i ] = upperEstimate.back();
+                        upperEstimate.pop_back();
+                    }
+                    else
+                        ++i;
+                }
+                
+                diff = diff + ( upperEstimateSize - upperEstimate.size() );
+                upperEstimateSize = upperEstimate.size();
+                solver.printUpperEstimate();
+
+                if( upperEstimate.empty() )
+                    break;
+
+                solver.doRestart();
+                solver.simplifyOnRestart();
+                solver.clearConflictStatus();
+            }
+            else
+            {
+                break;                
+            }
+//            if( !solver.addClauseFromModelAndRestart() )
+//            {
+//                trace_msg( enumeration, 1, "All models have been found." );
+//                break;
+//            }
+        }
+        
+        if( numberOfModels > 0 )
+        {            
+            cerr << "Avg of cut Models: " << diff / numberOfModels << endl;
+        }
+        cerr << "Answers not in well founded: " << solver.getLowerEstimate().size() - lowerEstimateSize << endl;
+        cerr << "Enumerated Models: " << numberOfModels << endl;
     }
 
     if( numberOfModels == 0 )
@@ -186,4 +335,105 @@ WaspFacade::setRestartsPolicy(
             solver.setRestart( restart );
             break;
     }
+}
+
+bool
+WaspFacade::claspApproachForQuery()
+{
+    if( clauseFromModel == NULL )
+    {
+        clauseFromModel = solver.computeClauseFromModel();
+        clauseFromModel->canBeSimplified = false;
+    }
+    else
+    {
+        unsigned int maxLevel = 0;
+        unsigned int maxPosition = 0;
+        unsigned int secondMaxLevel = 0;
+        unsigned int secondMaxPosition = 0;
+
+        if( clauseFromModel->size() > 1 )
+            clauseFromModel->detachClause();
+
+        for( unsigned int i = 0; i < clauseFromModel->size(); )
+        {
+            Variable* var = clauseFromModel->getAt( i ).getVariable();
+            unsigned int dl = var->getDecisionLevel();
+
+            if( !var->isTrue() )
+            {
+                clauseFromModel->swapLiteralsNoWatches( i, clauseFromModel->size() - 1 );
+                clauseFromModel->removeLastLiteralNoWatches();
+            }
+            else if( dl == 0 )
+            {
+                clauseFromModel->swapLiteralsNoWatches( i, clauseFromModel->size() - 1 );
+                clauseFromModel->removeLastLiteralNoWatches();
+                solver.addVariableInLowerEstimate( var );
+            }
+            else
+            {
+                if( dl > maxLevel )
+                {
+                    secondMaxLevel = maxLevel;
+                    secondMaxPosition = maxPosition;
+                    maxLevel = dl;
+                    maxPosition = i;
+                }
+                else if( dl > secondMaxLevel )
+                {
+                    secondMaxLevel = dl;
+                    secondMaxPosition = i;
+                }
+                i++;
+            }
+        }
+
+        if( clauseFromModel->size() > 1 )
+        {    
+            assert( maxLevel > 0 );
+            assert( secondMaxLevel > 0 );
+
+            clauseFromModel->swapLiteralsNoWatches( 0, maxPosition );
+            clauseFromModel->swapLiteralsNoWatches( 1, secondMaxPosition != 0 ? secondMaxPosition : maxPosition );
+            statistics( onAddingClause( size ) );
+            clauseFromModel->attachClause();            
+        }
+    }
+
+    assert( clauseFromModel != NULL );
+    
+    cout << "Possible answers:" << endl;
+    for( unsigned int i = 0; i < clauseFromModel->size(); i++ )
+    {
+        cout << " " << *clauseFromModel->getAt( i ).getVariable();
+    }
+    cout << endl;
+
+    if( clauseFromModel->size() == 0 )
+        return false;
+
+    unsigned int size = clauseFromModel->size();
+    if( size > 1 )
+    {
+        unsigned int unrollLevel = clauseFromModel->getAt( 1 ).getDecisionLevel();
+        if( clauseFromModel->getAt( 0 ).getDecisionLevel() == unrollLevel )
+            --unrollLevel;
+
+        solver.unroll( unrollLevel );
+        if( !clauseFromModel->getAt( 1 ).isUndefined() )
+        {
+            assert( clauseFromModel->getAt( 0 ).isUndefined() );
+            solver.assignLiteral( clauseFromModel );
+        }
+    }
+    else
+    {
+        assert( size == 1 );
+        solver.doRestart();
+        solver.simplifyOnRestart();
+        solver.assignLiteral( clauseFromModel->getAt( 0 ) );                        
+        solver.clearConflictStatus();        
+    }
+    return true;
 }

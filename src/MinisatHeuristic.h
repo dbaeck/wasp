@@ -35,6 +35,7 @@ class MinisatHeuristic
         inline ~MinisatHeuristic(){};
 
         Literal makeAChoice();
+        Literal makeAChoice( vector< Variable* >& preferredChoices );
         inline void onNewVariable( Variable* variable );
         inline void onLiteralInvolvedInConflict( Literal literal );
         inline void simplifyVariablesAtLevelZero();

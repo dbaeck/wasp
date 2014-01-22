@@ -91,14 +91,32 @@ Solver::addClauseFromModelAndRestart()
     trace_msg( enumeration, 2, "Creating the clause representing the model." );
     Clause* clause = newClause(); //new Clause();
     
+    unsigned int maxLevel = 0;
+    unsigned int maxPosition = 0;
+    unsigned int secondMaxLevel = 0;
+    unsigned int secondMaxPosition = 0;
     for( unsigned int i = 1; i <= variables.numberOfVariables(); i++ )
     {
         Variable* v = variables[ i ];
         assert( !v->isUndefined() );
-        
-        trace_msg( enumeration, 3, "Checking literal " << *v << " with decision level " << v->getDecisionLevel() << " and its implicant is " << ( v->hasImplicant() ? "not null" : "null" ) );
-        if( !v->hasImplicant() && v->getDecisionLevel() != 0 )
+
+        unsigned int dl = v->getDecisionLevel();        
+        trace_msg( enumeration, 3, "Checking literal " << *v << " with decision level " << dl << " and its implicant is " << ( v->hasImplicant() ? "not null" : "null" ) );        
+        if( !v->hasImplicant() && dl != 0 )
         {
+            if( dl > maxLevel )
+            {
+                secondMaxLevel = maxLevel;
+                secondMaxPosition = maxPosition;
+                maxLevel = dl;
+                maxPosition = clause->size();
+            }
+            else if( dl > secondMaxLevel )
+            {
+                secondMaxLevel = dl;
+                secondMaxPosition = clause->size();
+            }
+            
             if( v->isTrue() )
             {
                 Literal lit( v, NEGATIVE );
@@ -112,23 +130,107 @@ Solver::addClauseFromModelAndRestart()
                 clause->addLiteral( lit );
             }
         }
-    }    
+    }        
     
-    if( clause->size() == 0 )
+    unsigned int size = clause->size();    
+    if( size == 0 )
     {
         releaseClause( clause );
         return false;
     }
     
-    this->doRestart();
-    simplifyOnRestart();
-    return addClauseFromModel( clause );
+    if( size > 1 )
+    {
+        assert( maxLevel > 0 );
+        assert( secondMaxLevel > 0 );
+
+        clause->swapLiteralsNoWatches( 0, maxPosition );
+        clause->swapLiteralsNoWatches( 1, secondMaxPosition != 0 ? secondMaxPosition : maxPosition );
+        statistics( onAddingClause( size ) );
+        clause->attachClause();
+        clause->setPositionInSolver( clauses.size() );
+        clauses.push_back( clause );
+        
+        unroll( secondMaxLevel );
+        if( !clause->getAt( 1 ).isUndefined() )
+        {
+            assert( clause->getAt( 0 ).isUndefined() );
+            assignLiteral( clause );
+        }
+    }
+    else
+    {
+        assert( size == 1 );
+        this->doRestart();
+        simplifyOnRestart();
+        assignLiteral( clause->getAt( 0 ) );
+        releaseClause( clause );
+        clearConflictStatus();        
+    }        
+
+    return true;
+    
+//    return addClauseFromModel( clause );
+}
+
+Clause*
+Solver::computeClauseFromModel()
+{
+    assert( variables.numberOfAssignedLiterals() > 0 );   
+    
+    unsigned int maxLevel = 0;
+    unsigned int maxPosition = 0;
+    unsigned int secondMaxLevel = 0;
+    unsigned int secondMaxPosition = 0;
+    
+    Clause* clause = newClause();
+    for( unsigned int i = 1; i <= variables.numberOfVariables(); i++ )
+    {
+        Variable* v = variables[ i ];
+        assert( !v->isUndefined() );
+
+        unsigned int dl = v->getDecisionLevel();        
+        if( v->isTrue() && dl != 0 && !VariableNames::isHidden( v ) )
+        {
+            if( dl > maxLevel )
+            {
+                secondMaxLevel = maxLevel;
+                secondMaxPosition = maxPosition;
+                maxLevel = dl;
+                maxPosition = clause->size();
+            }
+            else if( dl > secondMaxLevel )
+            {
+                secondMaxLevel = dl;
+                secondMaxPosition = clause->size();
+            }
+
+            clause->addLiteral( Literal( v, NEGATIVE ) );
+        }
+    }
+    
+    if( clause->size() > 1 )
+    {    
+        assert( maxLevel > 0 );
+        assert( secondMaxLevel > 0 );
+
+        clause->swapLiteralsNoWatches( 0, maxPosition );
+        clause->swapLiteralsNoWatches( 1, secondMaxPosition != 0 ? secondMaxPosition : maxPosition );
+        statistics( onAddingClause( size ) );
+        clause->attachClause();
+        clause->setPositionInSolver( clauses.size() );
+        clauses.push_back( clause );
+    }
+    
+    return clause;
 }
 
 bool 
 Solver::solve()
 {
-    trace( solving, 1, "Starting solving.\n" );    
+    trace( solving, 1, "Starting solving.\n" );
+    if( hasNextVariableToPropagate() )
+        goto propagation;        
     
     while( hasUndefinedLiterals() )
     {
@@ -160,9 +262,11 @@ Solver::solve()
         
         while( hasNextVariableToPropagate() )
         {
+            propagation:;
+
             nextValueOfPropagation--;
             Variable* variableToPropagate = getNextVariableToPropagate();
-            propagate( variableToPropagate );
+            propagate( variableToPropagate );            
 
             if( conflictDetected() )
             {
@@ -184,7 +288,7 @@ Solver::solve()
             }
         }
     }
-    
+
     completeModel();
     assert_msg( getNumberOfUndefined() == 0, "Found a model with " << getNumberOfUndefined() << " undefined variables." );
     assert_msg( allClausesSatisfied(), "The model found is not correct." );

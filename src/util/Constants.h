@@ -68,6 +68,13 @@
 #define QUERY_TRUE_OUTPUT "yes."
 #define MAXUNSIGNEDINT UINT_MAX
 
+/*
+ * Query
+ */
+#define NOQUERY 0
+#define WASPQUERY 1
+#define CLASPQUERY 2
+
 /* 
  * Error messages
  */

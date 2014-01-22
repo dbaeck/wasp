@@ -35,6 +35,8 @@ class WaspFacade
         
         void readInput();
         void solve();
+        void solveQueryClaspApproach();
+        void solveQueryWaspApproach();
         
         inline void greetings(){ solver.greetings(); }
         
@@ -45,16 +47,30 @@ class WaspFacade
 
         inline void setMaxModels( unsigned int max );
         inline void setPrintProgram( bool printProgram );        
-        
+
+        inline void setQuery( unsigned int value );
     private:
         Solver solver;        
         
         unsigned int numberOfModels;
         unsigned int maxModels;
         bool printProgram;
+        unsigned int query;
+        //vector< Variable* > lowerEstimate;
+        //vector< Variable* > upperEstimate;
+        Clause* clauseFromModel;
+        
+        inline bool hasQuery() { return query != NOQUERY; }
+        inline bool claspQuery() { return query == CLASPQUERY; }
+        inline bool waspQuery() { return query == WASPQUERY; }
+        
+        inline void computeLowerEstimate();
+        bool claspApproachForQuery();
+        
+        inline void printLowerEstimate();
 };
 
-WaspFacade::WaspFacade() : numberOfModels( 0 ), maxModels( 1 ), printProgram( false )
+WaspFacade::WaspFacade() : numberOfModels( 0 ), maxModels( 1 ), printProgram( false ), clauseFromModel( NULL )
 {    
 }
 
@@ -74,6 +90,35 @@ WaspFacade::setPrintProgram(
     bool print )
 {
     printProgram = print;
+}
+
+void
+WaspFacade::computeLowerEstimate()
+{
+    for( unsigned int i = 1; i <= solver.numberOfVariables(); i++ )
+    {
+        Variable* var = solver.getVariable( i );
+        if( var->isTrue() && !VariableNames::isHidden( var ) )
+        {
+            assert( !var->hasBeenEliminated() );
+            assert( var->getDecisionLevel() == 0 );
+            solver.addVariableInLowerEstimate( var );
+        }
+    }
+}
+
+void
+WaspFacade::setQuery(
+    unsigned int value )
+{
+    query = value;
+    solver.setQuery( value );
+}
+
+void
+WaspFacade::printLowerEstimate()
+{
+    solver.printLowerEstimate();
 }
 
 #endif	/* WASPFACADE_H */

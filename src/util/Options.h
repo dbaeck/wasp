@@ -64,9 +64,11 @@ namespace wasp
 
             static RESTARTS_POLICY restartsPolicy;
             
-            static unsigned int restartsThreshold;            
+            static unsigned int restartsThreshold;
 
-            static unsigned int timeLimit;            
+            static unsigned int timeLimit;
+            
+            static unsigned int query;
     };
 };
 

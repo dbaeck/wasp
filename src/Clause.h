@@ -63,7 +63,7 @@ class Clause
         inline void detachClauseToAllLiterals( Literal literal );        
         inline void removeLiteral( Literal literal );
         inline void removeLiteralInLastPosition( bool currentLiteral );
-        inline void removeLastLiteralNoWatches(){ literals.pop_back(); }
+        inline void removeLastLiteralNoWatches(){ literals.pop_back(); resetLastSwapIndex(); }
         
         inline void onLearning( Learning* strategy );
         inline bool onLiteralFalse( Literal literal );
@@ -109,6 +109,8 @@ class Clause
         inline void setInQueue(){ clauseData.inQueue = 1; }
         inline bool isInQueue(){ return clauseData.inQueue == 1; }
         
+        bool canBeSimplified;        
+        
     protected:
         vector< Literal > literals;
         unsigned lastSwapIndex;
@@ -134,6 +136,8 @@ class Clause
         
         inline void recomputeSignature();
         
+        inline void resetLastSwapIndex() { lastSwapIndex = 1; }
+        
         uint64_t signature;
 //        unsigned int positionInSolver;
         
@@ -148,7 +152,7 @@ class Clause
         } clauseData;
 };
 
-Clause::Clause(): lastSwapIndex( 1 ), signature( 0 ), act( 0.0 )
+Clause::Clause(): canBeSimplified( true ), lastSwapIndex( 1 ), signature( 0 ), act( 0.0 )
 {
     literals.reserve( 8 );
     clauseData.inQueue = 0;
@@ -373,6 +377,9 @@ Clause::onLearning(
             assert_msg( literal.isFalse(), "Literal " << literal << " is not false." );
             swapUnwatchedLiterals( i, literals.size() - 1 );
             literals.pop_back();
+            
+            if( lastSwapIndex > literals.size() )
+                resetLastSwapIndex();
         }
     }
 }
@@ -446,7 +453,7 @@ Clause::swapUnwatchedLiterals(
 
 bool
 Clause::updateWatch()
-{
+{    
     assert( "Unary clauses must be removed." && literals.size() > 1 );
     
     for( unsigned i = lastSwapIndex + 1; i < literals.size(); ++i )
@@ -484,7 +491,7 @@ Clause::updateWatch()
     }
 
     assert( "The other watched literal cannot be true." && !literals[ 0 ].isTrue() );
-    
+
     //Propagate literals[ 0 ];
     return false;
 //    notifyImplication( solver );
@@ -502,7 +509,7 @@ Clause::onLiteralFalse(
         //The watch to update should be always in position 1.
         literals[ 0 ] = literals[ 1 ];
         literals[ 1 ] = literal;
-    }
+    }    
 
     assert( "Literal is not watched." && literal == literals[ 1 ] );
     //if the clause is already satisfied do nothing.
@@ -570,6 +577,9 @@ Clause::isSubsetOf(
 bool
 Clause::removeSatisfiedLiterals()
 {
+    if( !canBeSimplified )
+        return false;
+    
     if( literals[ 0 ].isTrue() )
     {        
         if( isLocked() )
@@ -598,6 +608,9 @@ Clause::removeSatisfiedLiterals()
             i++;
         }        
     }
+    
+    if( lastSwapIndex >= literals.size() )
+        resetLastSwapIndex();
         
     return false;
 }
