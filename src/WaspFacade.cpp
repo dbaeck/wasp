@@ -414,7 +414,7 @@ WaspFacade::claspApproachForQuery()
 
     assert( clauseFromModel != NULL );
     
-    cout << "Possible answers:" << endl;
+    cout << "Possible answers: (" << clauseFromModel->size() << ")" << endl;
     for( unsigned int i = 0; i < clauseFromModel->size(); i++ )
     {
         cout << " " << *clauseFromModel->getAt( i ).getVariable();
