@@ -446,8 +446,8 @@ GringoNumericFormat::readAtomsTable(
 
     while( nextAtom != 0 )
     {
-        string name;
-        input >> name;
+        char name[ 1024 ];
+        input.getline( name, 1023 );
 
         VariableNames::setName( getVariable( getIdInSolver( nextAtom, false ) ), name );
         //getVariable( getIdInSolver( nextAtom, false ) )->setName( name );
