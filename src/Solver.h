@@ -964,7 +964,7 @@ Solver::releaseClause(
 void
 Solver::printLowerEstimate()
 {
-    cout << "Certain answers:" << endl;
+    cout << "Certain answers: (" << lowerEstimate.size() << ")" << endl;
     for( unsigned int i = 0; i < lowerEstimate.size(); i++ )
         cout << *lowerEstimate[ i ] << " ";
     cout << endl;

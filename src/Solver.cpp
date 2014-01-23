@@ -216,7 +216,7 @@ Solver::computeClauseFromModel()
 
         clause->swapLiteralsNoWatches( 0, maxPosition );
         clause->swapLiteralsNoWatches( 1, secondMaxPosition != 0 ? secondMaxPosition : maxPosition );
-        statistics( onAddingClause( size ) );
+        statistics( onAddingClause( clause->size() ) );
         clause->attachClause();
         clause->setPositionInSolver( clauses.size() );
         clauses.push_back( clause );
