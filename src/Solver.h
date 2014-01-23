@@ -973,7 +973,7 @@ Solver::printLowerEstimate()
 void
 Solver::printUpperEstimate()
 {
-    cout << "Possible answers:" << endl;
+    cout << "Possible answers: (" << preferredChoices.size() << ")" << endl;
     for( unsigned int i = 0; i < preferredChoices.size(); i++ )
         cout << *preferredChoices[ i ] << " ";
     cout << endl;
