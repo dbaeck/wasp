@@ -971,8 +971,8 @@ Solver::printLowerEstimate()
 {
     printTime( cout );
     cout << "Certain answers (" << lowerEstimate.size() << "):" << endl;
-    for( unsigned int i = 0; i < lowerEstimate.size(); i++ )
-        cout << *lowerEstimate[ i ] << " ";
+//    for( unsigned int i = 0; i < lowerEstimate.size(); i++ )
+//        cout << *lowerEstimate[ i ] << " ";
     cout << endl;
 }
 
@@ -982,9 +982,9 @@ Solver::printUpperEstimate()
     printTime( cout );
     cout << "Possible answers (" << ( preferredChoices.size() + lowerEstimate.size() ) << "; " << preferredChoices.size() << "):" << endl;
 //    cout << "Possible answers (" << preferredChoices.size() << "):" << endl;
-    for( unsigned int i = 0; i < preferredChoices.size(); i++ )
-        cout << *preferredChoices[ i ] << " ";
-    cout << endl;
+//    for( unsigned int i = 0; i < preferredChoices.size(); i++ )
+//        cout << *preferredChoices[ i ] << " ";
+    cout << endl;    
 }
 
 #endif	/* SOLVER_H */

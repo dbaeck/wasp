@@ -344,8 +344,8 @@ Options::parse(
                 if( optarg )
                 {
                     query = atoi( optarg );
-                    if( query > CLASPQUERYRESTART )
-                        query = WASPQUERY;
+                    if( query > HYBRIDQUERY )
+                        ErrorMessage::errorGeneric( "Incorrect value for option --query." );
                 }
                 break;
                 

@@ -119,6 +119,12 @@ WaspFacade::solveQueryClaspApproach()
         {
             ++numberOfModels;
 
+            if( query == HYBRIDQUERY && numberOfModels == 1 )
+            {
+                query = WASPQUERY;
+                solver.setQuery( query );
+            }
+            
             if( !claspApproachForQuery( diff ) )
                 break;
         }
@@ -142,7 +148,7 @@ WaspFacade::solveQueryClaspApproach()
         
         for( unsigned int i = 0; i < clauseFromModel->size(); i++ )
             cout << *clauseFromModel->getAt( i ).getVariable() << " ";
-        cout << endl;
+        cout << endl;        
     }
 }
 
@@ -164,30 +170,39 @@ WaspFacade::solveQueryWaspApproach()
         printLowerEstimate();
         solver.printUpperEstimate();
 
+        if( query == WASPQUERYFIRSTMODEL )
+        {
+            if( solver.solve() )
+            {                
+                query = WASPQUERY;
+                solver.setQuery( query );
+                ++numberOfModels;
+                shrinkUpperEstimate();
+                diff = diff + ( upperEstimateSize - solver.getPreferredChoices().size() );
+                upperEstimateSize = solver.getPreferredChoices().size();
+                solver.printUpperEstimate();
+                
+                solver.doRestart();
+                solver.simplifyOnRestart();
+                solver.clearConflictStatus();
+            }
+            else
+            {
+                solver.getPreferredChoices().clear();
+            }
+        }
+
         while( !solver.getPreferredChoices().empty() )
         {
             if( solver.solve() )
             {
-                ++numberOfModels;
-                vector< Variable* >& upperEstimate = solver.getPreferredChoices();
-                for( unsigned int i = 0; i < upperEstimate.size(); )
-                {
-                    Variable* var = upperEstimate[ i ];
-                    assert( !var->isUndefined() );
-                    if( !var->isTrue() )
-                    {
-                        upperEstimate[ i ] = upperEstimate.back();
-                        upperEstimate.pop_back();
-                    }
-                    else
-                        ++i;
-                }
                 
-                diff = diff + ( upperEstimateSize - upperEstimate.size() );
-                upperEstimateSize = upperEstimate.size();
+                shrinkUpperEstimate();
+                diff = diff + ( upperEstimateSize - solver.getPreferredChoices().size() );
+                upperEstimateSize = solver.getPreferredChoices().size();
                 solver.printUpperEstimate();
 
-                if( upperEstimate.empty() )
+                if( solver.getPreferredChoices().empty() )
                     break;
 
                 solver.doRestart();
@@ -370,7 +385,8 @@ WaspFacade::claspApproachForQuery(
             {
                 clauseFromModel->swapLiteralsNoWatches( i, clauseFromModel->size() - 1 );
                 clauseFromModel->removeLastLiteralNoWatches();
-                solver.addVariableInLowerEstimate( var );
+                if( query != WASPQUERY )
+                    solver.addVariableInLowerEstimate( var );
             }
             else
             {
@@ -410,11 +426,11 @@ WaspFacade::claspApproachForQuery(
     
     printTime( cout );
     cout << "Possible answers (" << ( clauseFromModel->size() + solver.getLowerEstimate().size() ) << "; " << clauseFromModel->size() << "):" << endl;
-    for( unsigned int i = 0; i < clauseFromModel->size(); i++ )
-    {
-        cout << " " << *clauseFromModel->getAt( i ).getVariable();
-    }
-    cout << endl;
+//    for( unsigned int i = 0; i < clauseFromModel->size(); i++ )
+//    {
+//        cout << " " << *clauseFromModel->getAt( i ).getVariable();
+//    }
+//    cout << endl;
 
     if( clauseFromModel->size() == 0 )
         return false;
@@ -445,4 +461,23 @@ WaspFacade::claspApproachForQuery(
         solver.clearConflictStatus();        
     }
     return true;
+}
+
+void
+WaspFacade::shrinkUpperEstimate()
+{
+    ++numberOfModels;
+    vector< Variable* >& upperEstimate = solver.getPreferredChoices();
+    for( unsigned int i = 0; i < upperEstimate.size(); )
+    {
+        Variable* var = upperEstimate[ i ];
+        assert( !var->isUndefined() );
+        if( !var->isTrue() )
+        {
+            upperEstimate[ i ] = upperEstimate.back();
+            upperEstimate.pop_back();
+        }
+        else
+            ++i;
+    }
 }

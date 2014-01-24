@@ -61,8 +61,10 @@ class WaspFacade
         Clause* clauseFromModel;
         
         inline bool hasQuery() { return query != NOQUERY; }
-        inline bool claspQuery() { return query == CLASPQUERY || query == CLASPQUERYRESTART; }
-        inline bool waspQuery() { return query == WASPQUERY; }
+        inline bool claspQuery() { return query == CLASPQUERY || query == CLASPQUERYRESTART || query == HYBRIDQUERY; }
+        inline bool waspQuery() { return query == WASPQUERY || query == WASPQUERYFIRSTMODEL; }
+        
+        void shrinkUpperEstimate();
         
         inline void computeLowerUpperEstimate();
         bool claspApproachForQuery( unsigned int& diff );
