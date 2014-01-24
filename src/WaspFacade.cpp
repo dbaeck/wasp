@@ -82,7 +82,7 @@ WaspFacade::solve()
             }
             else
             {
-                if( !solver.addClauseFromModelAndRestart() )
+                if( !solver.addClauseFromModelAndBackjump() )
                 {
                     trace_msg( enumeration, 1, "All models have been found." );
                     break;
@@ -104,19 +104,23 @@ WaspFacade::solveQueryClaspApproach()
     assert( claspQuery() );
     solver.init();
 
+    uint64_t lowerEstimateInitialSize = 0;
+    unsigned int diff = 0;
     if( solver.preprocessing() )
     {
-        computeLowerEstimate();
-        cerr << "Answers from well founded: " << solver.getLowerEstimate().size() << endl;
+        computeLowerUpperEstimate();
+        lowerEstimateInitialSize = solver.getLowerEstimate().size();
+        cerr << "Answers from well founded: " << lowerEstimateInitialSize << endl;
         
         printLowerEstimate();
+        solver.printUpperEstimate();
 
         while( solver.solve() )
         {
             ++numberOfModels;
 
-            if( !claspApproachForQuery() )
-                break;            
+            if( !claspApproachForQuery( diff ) )
+                break;
         }
     }
 
@@ -127,7 +131,9 @@ WaspFacade::solveQueryClaspApproach()
     }
     else
     {
-        assert( clauseFromModel != NULL );        
+        assert( clauseFromModel != NULL );
+        cerr << "Avg of cut Models: " << diff / numberOfModels << endl;
+        cerr << "Answers not in well founded: " << ( solver.getLowerEstimate().size() + clauseFromModel->size() ) - lowerEstimateInitialSize << endl;
         cerr << "Enumerated Models: " << numberOfModels << endl;
 
         cout << "Cautious consequences:" << endl;
@@ -148,22 +154,7 @@ WaspFacade::solveQueryWaspApproach()
 
     if( solver.preprocessing() )
     {
-        for( unsigned int i = 1; i <= solver.numberOfVariables(); i++ )
-        {
-            Variable* var = solver.getVariable( i );
-            if( !VariableNames::isHidden( var ) )
-            {
-                assert( !var->hasBeenEliminated() );
-                if( var->isTrue() )
-                {
-                    assert( var->getDecisionLevel() == 0 );
-                    solver.addVariableInLowerEstimate( var );
-                }
-                else if( var->isUndefined() )
-                    solver.addPreferredChoice( var );
-            }
-        }
-
+        computeLowerUpperEstimate();
         uint64_t lowerEstimateSize = solver.getLowerEstimate().size();
         uint64_t upperEstimateSize = solver.getPreferredChoices().size();
         uint64_t diff = 0;
@@ -345,8 +336,9 @@ WaspFacade::setRestartsPolicy(
 }
 
 bool
-WaspFacade::claspApproachForQuery()
-{
+WaspFacade::claspApproachForQuery(
+    unsigned int& diff )
+{   
     if( clauseFromModel == NULL )
     {
         clauseFromModel = solver.computeClauseFromModel();
@@ -359,6 +351,7 @@ WaspFacade::claspApproachForQuery()
         unsigned int secondMaxLevel = 0;
         unsigned int secondMaxPosition = 0;
 
+        unsigned int initialClauseFromModelSize = clauseFromModel->size();
         if( clauseFromModel->size() > 1 )
             clauseFromModel->detachClause();
 
@@ -366,8 +359,8 @@ WaspFacade::claspApproachForQuery()
         for( unsigned int i = 0; i < clauseFromModel->size(); )
         {
             Variable* var = clauseFromModel->getAt( i ).getVariable();
-            unsigned int dl = var->getDecisionLevel();
-
+            unsigned int dl = var->getDecisionLevel();            
+            
             if( !var->isTrue() )
             {
                 clauseFromModel->swapLiteralsNoWatches( i, clauseFromModel->size() - 1 );
@@ -396,12 +389,13 @@ WaspFacade::claspApproachForQuery()
                 i++;
             }
         }
-        
+
+        diff = diff + ( initialClauseFromModelSize - clauseFromModel->size() );
         if( size < solver.getLowerEstimate().size() )
             solver.printLowerEstimate();
 
         if( clauseFromModel->size() > 1 )
-        {    
+        {
             assert( maxLevel > 0 );
             assert( secondMaxLevel > 0 );
 
@@ -414,7 +408,8 @@ WaspFacade::claspApproachForQuery()
 
     assert( clauseFromModel != NULL );
     
-    cout << "Possible answers: (" << clauseFromModel->size() << ")" << endl;
+    printTime( cout );
+    cout << "Possible answers (" << ( clauseFromModel->size() + solver.getLowerEstimate().size() ) << "; " << clauseFromModel->size() << "):" << endl;
     for( unsigned int i = 0; i < clauseFromModel->size(); i++ )
     {
         cout << " " << *clauseFromModel->getAt( i ).getVariable();
@@ -430,6 +425,9 @@ WaspFacade::claspApproachForQuery()
         unsigned int unrollLevel = clauseFromModel->getAt( 1 ).getDecisionLevel();
         if( clauseFromModel->getAt( 0 ).getDecisionLevel() == unrollLevel )
             --unrollLevel;
+        
+        if( query == CLASPQUERYRESTART )
+            unrollLevel = 0;
 
         solver.unroll( unrollLevel );
         if( !clauseFromModel->getAt( 1 ).isUndefined() )

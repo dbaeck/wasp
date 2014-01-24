@@ -74,6 +74,7 @@
 #define NOQUERY 0
 #define WASPQUERY 1
 #define CLASPQUERY 2
+#define CLASPQUERYRESTART 3
 
 /* 
  * Error messages
@@ -126,7 +127,6 @@ std::string toString( const T& t )
     return ss.str();
 }
 #endif
-
 
 #endif	/* CONSTANTS_H */
 

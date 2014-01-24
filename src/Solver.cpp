@@ -83,8 +83,79 @@ Solver::unroll(
     variables.onUnroll();
 }
 
+//bool
+//Solver::addClauseFromModelAndRestart()
+//{
+//    assert( variables.numberOfAssignedLiterals() > 0 );
+//    
+//    trace_msg( enumeration, 2, "Creating the clause representing the model." );
+//    Clause* clause = newClause(); //new Clause();
+//    clause->setLearned();
+//    
+//    for( unsigned int i = 1; i <= variables.numberOfVariables(); i++ )
+//    {
+//        Variable* v = variables[ i ];
+//        assert( !v->isUndefined() );
+//
+//        unsigned int dl = v->getDecisionLevel();        
+//        trace_msg( enumeration, 3, "Checking literal " << *v << " with decision level " << dl << " and its implicant is " << ( v->hasImplicant() ? "not null" : "null" ) );        
+//        if( !v->hasImplicant() && dl != 0 )
+//        {            
+//            if( v->isTrue() )
+//            {
+//                Literal lit( v, NEGATIVE );
+//                trace_msg( enumeration, 2, "Adding literal " << lit << " in clause." );
+//                clause->addLiteral( lit );
+//            }
+//            else
+//            {
+//                Literal lit( v );
+//                trace_msg( enumeration, 2, "Adding literal " << lit << " in clause." );
+//                clause->addLiteral( lit );
+//            }
+//        }
+//    }        
+//    
+//    unsigned int size = clause->size();    
+//    if( size == 0 )
+//    {        
+//        releaseClause( clause );
+//        return false;
+//    }
+//    
+//    if( size > 1 )
+//    {
+//        statistics( onAddingClause( size ) );
+//        clause->attachClause();
+//        learnedClauses.push_back( clause );
+//        
+//        doRestart();
+//        simplifyOnRestart();
+//        clearConflictStatus();
+//        //unroll( secondMaxLevel );
+////        if( !clause->getAt( 1 ).isUndefined() )
+////        {
+////            assert( clause->getAt( 0 ).isUndefined() );
+////            assignLiteral( clause );
+////        }
+//    }
+//    else
+//    {
+//        assert( size == 1 );
+//        this->doRestart();
+//        simplifyOnRestart();
+//        assignLiteral( clause->getAt( 0 ) );
+//        releaseClause( clause );
+//        clearConflictStatus();        
+//    }        
+//
+//    return true;
+//    
+////    return addClauseFromModel( clause );
+//}
+
 bool
-Solver::addClauseFromModelAndRestart()
+Solver::addClauseFromModelAndBackjump()
 {
     assert( variables.numberOfAssignedLiterals() > 0 );
     
@@ -184,30 +255,42 @@ Solver::computeClauseFromModel()
     unsigned int secondMaxPosition = 0;
     
     Clause* clause = newClause();
-    for( unsigned int i = 1; i <= variables.numberOfVariables(); i++ )
+    uint64_t initialSize = lowerEstimate.size();
+    for( unsigned int i = 0; i < preferredChoices.size(); i++ )
     {
-        Variable* v = variables[ i ];
+        Variable* v = preferredChoices[ i ];
         assert( !v->isUndefined() );
-
+        
         unsigned int dl = v->getDecisionLevel();        
-        if( v->isTrue() && dl != 0 && !VariableNames::isHidden( v ) )
+        if( v->isTrue() && !VariableNames::isHidden( v ) )
         {
-            if( dl > maxLevel )
+            if( dl != 0 )
             {
-                secondMaxLevel = maxLevel;
-                secondMaxPosition = maxPosition;
-                maxLevel = dl;
-                maxPosition = clause->size();
-            }
-            else if( dl > secondMaxLevel )
-            {
-                secondMaxLevel = dl;
-                secondMaxPosition = clause->size();
-            }
+                if( dl > maxLevel )
+                {
+                    secondMaxLevel = maxLevel;
+                    secondMaxPosition = maxPosition;
+                    maxLevel = dl;
+                    maxPosition = clause->size();
+                }
+                else if( dl > secondMaxLevel )
+                {
+                    secondMaxLevel = dl;
+                    secondMaxPosition = clause->size();
+                }
 
-            clause->addLiteral( Literal( v, NEGATIVE ) );
+                clause->addLiteral( Literal( v, NEGATIVE ) );
+            }
+            else
+            {
+                assert( dl == 0 );
+                lowerEstimate.push_back( v );
+            }
         }
     }
+    
+    if( initialSize < lowerEstimate.size() )
+        printLowerEstimate();
     
     if( clause->size() > 1 )
     {    

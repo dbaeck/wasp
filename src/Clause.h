@@ -374,12 +374,17 @@ Clause::onLearning(
         }
         else
         {
-            assert_msg( literal.isFalse(), "Literal " << literal << " is not false." );
-            swapUnwatchedLiterals( i, literals.size() - 1 );
-            literals.pop_back();
-            
-            if( lastSwapIndex > literals.size() )
-                resetLastSwapIndex();
+            if( this->canBeSimplified )
+            {
+                assert_msg( literal.isFalse(), "Literal " << literal << " is not false." );
+                swapUnwatchedLiterals( i, literals.size() - 1 );
+                literals.pop_back();
+
+                if( lastSwapIndex > literals.size() )
+                    resetLastSwapIndex();
+            }
+            else
+                i++;
         }
     }
 }

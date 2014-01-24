@@ -30,6 +30,7 @@
 using namespace std;
 
 int EXIT_CODE = 0;
+time_t initial_time = time( 0 );
 
 /*
  * 

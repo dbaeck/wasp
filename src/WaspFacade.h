@@ -61,11 +61,11 @@ class WaspFacade
         Clause* clauseFromModel;
         
         inline bool hasQuery() { return query != NOQUERY; }
-        inline bool claspQuery() { return query == CLASPQUERY; }
+        inline bool claspQuery() { return query == CLASPQUERY || query == CLASPQUERYRESTART; }
         inline bool waspQuery() { return query == WASPQUERY; }
         
-        inline void computeLowerEstimate();
-        bool claspApproachForQuery();
+        inline void computeLowerUpperEstimate();
+        bool claspApproachForQuery( unsigned int& diff );
         
         inline void printLowerEstimate();
 };
@@ -93,16 +93,21 @@ WaspFacade::setPrintProgram(
 }
 
 void
-WaspFacade::computeLowerEstimate()
-{
+WaspFacade::computeLowerUpperEstimate()
+{    
     for( unsigned int i = 1; i <= solver.numberOfVariables(); i++ )
     {
         Variable* var = solver.getVariable( i );
-        if( var->isTrue() && !VariableNames::isHidden( var ) )
+        if( !VariableNames::isHidden( var ) )
         {
             assert( !var->hasBeenEliminated() );
-            assert( var->getDecisionLevel() == 0 );
-            solver.addVariableInLowerEstimate( var );
+            if( var->isTrue() )
+            {
+                assert( var->getDecisionLevel() == 0 );
+                solver.addVariableInLowerEstimate( var );
+            }
+            else if( var->isUndefined() )
+                solver.addPreferredChoice( var );
         }
     }
 }

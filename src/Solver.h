@@ -21,6 +21,7 @@
 
 #include <cassert>
 #include <vector>
+#include <iomanip>
 using namespace std;
 
 #include "Clause.h"
@@ -39,6 +40,9 @@ using namespace std;
 #include "Restart.h"
 #include "MinisatHeuristic.h"
 #include "util/Statistics.h"
+#include "util/Time.h"
+
+extern time_t initial_time;
 
 class Solver
 {
@@ -63,7 +67,8 @@ class Solver
         inline bool addClause( Clause* clause );
         inline bool addClauseFromModel( Clause* clause );
         inline void addLearnedClause( Clause* learnedClause );
-        bool addClauseFromModelAndRestart();
+        bool addClauseFromModelAndBackjump();
+//        bool addClauseFromModelAndRestart();
         Clause* computeClauseFromModel();
         
         inline Literal getLiteral( int lit );
@@ -964,7 +969,8 @@ Solver::releaseClause(
 void
 Solver::printLowerEstimate()
 {
-    cout << "Certain answers: (" << lowerEstimate.size() << ")" << endl;
+    printTime( cout );
+    cout << "Certain answers (" << lowerEstimate.size() << "):" << endl;
     for( unsigned int i = 0; i < lowerEstimate.size(); i++ )
         cout << *lowerEstimate[ i ] << " ";
     cout << endl;
@@ -973,7 +979,9 @@ Solver::printLowerEstimate()
 void
 Solver::printUpperEstimate()
 {
-    cout << "Possible answers: (" << preferredChoices.size() << ")" << endl;
+    printTime( cout );
+    cout << "Possible answers (" << ( preferredChoices.size() + lowerEstimate.size() ) << "; " << preferredChoices.size() << "):" << endl;
+//    cout << "Possible answers (" << preferredChoices.size() << "):" << endl;
     for( unsigned int i = 0; i < preferredChoices.size(); i++ )
         cout << *preferredChoices[ i ] << " ";
     cout << endl;

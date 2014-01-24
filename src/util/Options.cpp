@@ -344,7 +344,7 @@ Options::parse(
                 if( optarg )
                 {
                     query = atoi( optarg );
-                    if( query > CLASPQUERY )
+                    if( query > CLASPQUERYRESTART )
                         query = WASPQUERY;
                 }
                 break;
