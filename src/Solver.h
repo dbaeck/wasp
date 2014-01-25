@@ -179,10 +179,19 @@ class Solver
         inline vector< Variable* >& getPreferredChoices() { return preferredChoices; }
         
         inline void addVariableInLowerEstimate( Variable* var ) { lowerEstimate.push_back( var ); }
-        inline vector< Variable* >& getLowerEstimate() { return lowerEstimate; }
+        inline const vector< Variable* >& getLowerEstimate() { return lowerEstimate; }
+        
+        inline unsigned int getQueryType() const { return query; }
+        inline bool hasQuery() const { return query != NOQUERY; }
+        inline bool claspApproachForQuery() const { return query == CLASPQUERY || query == CLASPQUERYRESTART; }
+        inline bool waspApproachForQuery() const { return query == WASPQUERY; }
+        inline bool waspFirstModelApproachForQuery() const { return query == WASPQUERYFIRSTMODEL; }
+        inline bool hybridApproachForQuery() const { return query == HYBRIDQUERY; }
         
         inline void printLowerEstimate();
         inline void printUpperEstimate();
+        
+        inline void setFirstChoiceFromQuery( bool value ){ firstChoiceFromQuery = value; }
         
     private:
         inline Variable* addVariableInternal();
@@ -228,6 +237,8 @@ class Solver
         vector< Variable* > preferredChoices;
         vector< Variable* > lowerEstimate;
 
+        bool firstChoiceFromQuery;
+        
         struct DeletionCounters
         {
             Activity increment;
@@ -269,7 +280,8 @@ Solver::Solver()
     nextValueOfPropagation( 0 ),
     literalsInClauses( 0 ),
     literalsInLearnedClauses( 0 ),
-    query( NOQUERY )
+    query( NOQUERY ),
+    firstChoiceFromQuery( false )
 {
     satelite = new Satelite( *this );
     deletionCounters.init();
@@ -573,7 +585,7 @@ bool
 Solver::chooseLiteral()
 {
     Literal choice;
-    if( query == WASPQUERY && currentDecisionLevel == 0 )
+    if( currentDecisionLevel == 0 && firstChoiceFromQuery )
     {
         assert( !preferredChoices.empty() );        
 
@@ -587,8 +599,8 @@ Solver::chooseLiteral()
             if( !var->isUndefined() )
             {
                 assert( var->getDecisionLevel() == 0 );                    
-                if( var->isTrue() )
-                    lowerEstimate.push_back( var );
+                if( var->isTrue() && !hybridApproachForQuery() )
+                    addVariableInLowerEstimate( var );
 
                 preferredChoices[ i ] = preferredChoices.back();
                 preferredChoices.pop_back();
@@ -610,13 +622,19 @@ Solver::chooseLiteral()
             printLowerEstimate();
         
         if( preferredChoices.empty() )
-            return false;
+        {
+            if( hybridApproachForQuery() )
+               goto normalChoice; 
+            else
+                return false;
+        }
         
         //random_shuffle( preferredChoices.begin(), preferredChoices.end() );
         choice = minisatHeuristic.makeAChoice( preferredChoices );
     }
     else
     {
+        normalChoice:;
         choice = minisatHeuristic.makeAChoice();
     }
     trace( solving, 1, "Choice: %s.\n", toString( choice ).c_str() );

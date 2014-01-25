@@ -256,7 +256,7 @@ Solver::computeClauseFromModel()
     
     Clause* clause = newClause();
     uint64_t initialSize = lowerEstimate.size();
-    for( unsigned int i = 0; i < preferredChoices.size(); i++ )
+    for( unsigned int i = 0; i < preferredChoices.size(); )
     {
         Variable* v = preferredChoices[ i ];
         assert( !v->isUndefined() );
@@ -284,9 +284,15 @@ Solver::computeClauseFromModel()
             else
             {
                 assert( dl == 0 );
-                lowerEstimate.push_back( v );
+                addVariableInLowerEstimate( v );
+                
+                preferredChoices[ i ] = preferredChoices.back();
+                preferredChoices.pop_back();
+                continue;
             }
         }
+        
+        i++;
     }
     
     if( initialSize < lowerEstimate.size() )

@@ -70,6 +70,7 @@ class Variable
 //        inline void setName( string& name );
         
         inline bool isTrue() const;
+        inline bool isFalse() const;
         
 //        inline bool setFalse();
 //        inline bool setTrue();
@@ -238,6 +239,12 @@ bool
 Variable::isTrue() const
 {
     return getTruthValue() == TRUE;
+}
+
+bool
+Variable::isFalse() const
+{
+    return getTruthValue() == FALSE;
 }
 
 //bool

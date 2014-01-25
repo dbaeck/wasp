@@ -106,7 +106,7 @@ GringoNumericFormat::getIdInSolver(
     bool isAux )
 {
     assert_msg( id > 0, "Id must be positive and greater than 0. Current value " << id );
-    assert_msg( gringoIdToSolverId.find( isAux ? -id : id ) != gringoIdToSolverId.end(), "Cannot obtain solver id of " << ( isAux ? "aux" : "normal" ) << " variable with internal id " << id );
+    assert_msg( gringoIdToSolverId.find( isAux ? -id : id ) != gringoIdToSolverId.end(), "Cannot obtain solver id of " << ( isAux ? "aux" : "normal" ) << " variable with internal id " << id );    
     return isAux ? gringoIdToSolverId[ -id ] : gringoIdToSolverId[ id ];
 }
 

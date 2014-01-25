@@ -34,9 +34,7 @@ class WaspFacade
         inline ~WaspFacade();
         
         void readInput();
-        void solve();
-        void solveQueryClaspApproach();
-        void solveQueryWaspApproach();
+        void solve();        
         
         inline void greetings(){ solver.greetings(); }
         
@@ -55,19 +53,19 @@ class WaspFacade
         unsigned int numberOfModels;
         unsigned int maxModels;
         bool printProgram;
-        unsigned int query;
         //vector< Variable* > lowerEstimate;
         //vector< Variable* > upperEstimate;
         Clause* clauseFromModel;
-        
-        inline bool hasQuery() { return query != NOQUERY; }
-        inline bool claspQuery() { return query == CLASPQUERY || query == CLASPQUERYRESTART || query == HYBRIDQUERY; }
-        inline bool waspQuery() { return query == WASPQUERY || query == WASPQUERYFIRSTMODEL; }
         
         void shrinkUpperEstimate();
         
         inline void computeLowerUpperEstimate();
         bool claspApproachForQuery( unsigned int& diff );
+        
+        void solveQueryClaspApproach();
+        void solveQueryHybridApproach();
+        void solveQueryWaspApproach();
+        void solveQueryWaspApproachFirstModel();
         
         inline void printLowerEstimate();
 };
@@ -118,7 +116,6 @@ void
 WaspFacade::setQuery(
     unsigned int value )
 {
-    query = value;
     solver.setQuery( value );
 }
 
