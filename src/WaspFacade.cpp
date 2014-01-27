@@ -125,7 +125,7 @@ WaspFacade::solveQueryClaspApproach()
     {
         computeLowerUpperEstimate();
         lowerEstimateInitialSize = solver.getLowerEstimate().size();
-        cerr << "Answers from well founded: " << lowerEstimateInitialSize << endl;
+        cout << "Answers from well founded: " << lowerEstimateInitialSize << endl;
         
         printLowerEstimate();
         solver.printUpperEstimate();
@@ -147,9 +147,9 @@ WaspFacade::solveQueryClaspApproach()
     else
     {
         assert( clauseFromModel != NULL );
-        cerr << "Avg of cut Models: " << diff / numberOfModels << endl;
-        cerr << "Answers not in well founded: " << ( solver.getLowerEstimate().size() + clauseFromModel->size() ) - lowerEstimateInitialSize << endl;
-        cerr << "Enumerated Models: " << numberOfModels << endl;
+        cout << "Avg of cut Models: " << diff / numberOfModels << endl;
+        cout << "Answers not in well founded: " << ( solver.getLowerEstimate().size() + clauseFromModel->size() ) - lowerEstimateInitialSize << endl;
+        cout << "Enumerated Models: " << numberOfModels << endl;
 
         cout << "Cautious consequences:" << endl;
         for( unsigned int i = 0; i < solver.getLowerEstimate().size(); i++ )
@@ -174,8 +174,8 @@ WaspFacade::solveQueryWaspApproach()
         uint64_t lowerEstimateSize = solver.getLowerEstimate().size();
         uint64_t upperEstimateSize = solver.getPreferredChoices().size();
         uint64_t diff = 0;
-        cerr << "Answers from well founded: " << lowerEstimateSize << endl;
-        cerr << "Number of atoms to try: " << upperEstimateSize << endl;        
+        cout << "Answers from well founded: " << lowerEstimateSize << endl;
+        cout << "Number of atoms to try: " << upperEstimateSize << endl;        
         
         printLowerEstimate();
         solver.printUpperEstimate();
@@ -202,9 +202,9 @@ WaspFacade::solveQueryWaspApproach()
         }
         
         if( numberOfModels > 0 )
-            cerr << "Avg of cut Models: " << diff / numberOfModels << endl;
-        cerr << "Answers not in well founded: " << solver.getLowerEstimate().size() - lowerEstimateSize << endl;
-        cerr << "Enumerated Models: " << numberOfModels << endl;
+            cout << "Avg of cut Models: " << diff / numberOfModels << endl;
+        cout << "Answers not in well founded: " << solver.getLowerEstimate().size() - lowerEstimateSize << endl;
+        cout << "Enumerated Models: " << numberOfModels << endl;
     }
 
     if( numberOfModels == 0 )
@@ -233,8 +233,8 @@ WaspFacade::solveQueryWaspApproachFirstModel()
         uint64_t lowerEstimateSize = solver.getLowerEstimate().size();
         uint64_t upperEstimateSize = solver.getPreferredChoices().size();
         uint64_t diff = 0;
-        cerr << "Answers from well founded: " << lowerEstimateSize << endl;
-        cerr << "Number of atoms to try: " << upperEstimateSize << endl;        
+        cout << "Answers from well founded: " << lowerEstimateSize << endl;
+        cout << "Number of atoms to try: " << upperEstimateSize << endl;        
         
         printLowerEstimate();
         solver.printUpperEstimate();
@@ -275,9 +275,9 @@ WaspFacade::solveQueryWaspApproachFirstModel()
         }
         
         if( numberOfModels > 0 )
-            cerr << "Avg of cut Models: " << diff / numberOfModels << endl;
-        cerr << "Answers not in well founded: " << solver.getLowerEstimate().size() - lowerEstimateSize << endl;
-        cerr << "Enumerated Models: " << numberOfModels << endl;
+            cout << "Avg of cut Models: " << diff / numberOfModels << endl;
+        cout << "Answers not in well founded: " << solver.getLowerEstimate().size() - lowerEstimateSize << endl;
+        cout << "Enumerated Models: " << numberOfModels << endl;
     }
 
     if( numberOfModels == 0 )
@@ -306,7 +306,7 @@ WaspFacade::solveQueryHybridApproach()
     {
         computeLowerUpperEstimate();
         lowerEstimateInitialSize = solver.getLowerEstimate().size();
-        cerr << "Answers from well founded: " << lowerEstimateInitialSize << endl;
+        cout << "Answers from well founded: " << lowerEstimateInitialSize << endl;
         
         printLowerEstimate();
         solver.printUpperEstimate();
@@ -329,23 +329,18 @@ WaspFacade::solveQueryHybridApproach()
     }
     else
     {
-        assert( clauseFromModel != NULL );        
-        
-        cerr << "Clausola ";
-        for( unsigned int i = 0; i < clauseFromModel->size(); i++ )
-        {
-            cerr << clauseFromModel[ i ] << " ";
-        }
-        cerr << endl;
-        
-        cerr << "Avg of cut Models: " << diff / numberOfModels << endl;
-        cerr << "Answers not in well founded: " << solver.getLowerEstimate().size() - lowerEstimateInitialSize << endl;
-        cerr << "Enumerated Models: " << numberOfModels << endl;
-        
+        assert( clauseFromModel != NULL );
+        cout << "Avg of cut Models: " << diff / numberOfModels << endl;
+        cout << "Answers not in well founded: " << ( solver.getLowerEstimate().size() + clauseFromModel->size() ) - lowerEstimateInitialSize << endl;
+        cout << "Enumerated Models: " << numberOfModels << endl;
+
         cout << "Cautious consequences:" << endl;
         for( unsigned int i = 0; i < solver.getLowerEstimate().size(); i++ )
             cout << *solver.getLowerEstimate()[ i ] << " ";
-        cout << endl;        
+        
+        for( unsigned int i = 0; i < clauseFromModel->size(); i++ )
+            cout << *clauseFromModel->getAt( i ).getVariable() << " ";
+        cout << endl;
     }
 }
 

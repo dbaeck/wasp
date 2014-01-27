@@ -589,6 +589,11 @@ Solver::chooseLiteral()
     {
         assert( !preferredChoices.empty() );        
 
+        static int contatore = 0;
+        if( hybridApproachForQuery() && ++contatore % 32 != 0 )
+        {
+            goto normalChoice;
+        }
         unsigned int oldSize = lowerEstimate.size();
         Activity maxAct = 0;
         unsigned int maxIndex = 0;
@@ -628,13 +633,12 @@ Solver::chooseLiteral()
             else
                 return false;
         }
-        
-        //random_shuffle( preferredChoices.begin(), preferredChoices.end() );
+
         choice = minisatHeuristic.makeAChoice( preferredChoices );
     }
     else
     {
-        normalChoice:;
+        normalChoice:;        
         choice = minisatHeuristic.makeAChoice();
     }
     trace( solving, 1, "Choice: %s.\n", toString( choice ).c_str() );
