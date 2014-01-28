@@ -146,18 +146,23 @@ WaspFacade::solveQueryClaspApproach()
     }
     else
     {
-        assert( clauseFromModel != NULL );
-        cout << "Avg of cut Models: " << diff / numberOfModels << endl;
-        cout << "Answers not in well founded: " << ( solver.getLowerEstimate().size() + clauseFromModel->size() ) - lowerEstimateInitialSize << endl;
-        cout << "Enumerated Models: " << numberOfModels << endl;
+        assert( solver.clauseFromModel != NULL );
+//        cerr << "Avg of cut Models: " << diff / numberOfModels << endl;
+//        cerr << "Answers not in well founded: " << ( solver.getLowerEstimate().size() + solver.clauseFromModel->size() ) - lowerEstimateInitialSize << endl;
+//        cerr << "Enumerated Models: " << numberOfModels << endl;
 
-        cout << "Cautious consequences:" << endl;
-        for( unsigned int i = 0; i < solver.getLowerEstimate().size(); i++ )
-            cout << *solver.getLowerEstimate()[ i ] << " ";
+        printTime( cout );
+        cout << "Possible answers (" << ( solver.clauseFromModel->size() + solver.getLowerEstimate().size() ) << "; " << 0 << "):" << endl;
+        for( unsigned int i = 0; i < solver.clauseFromModel->size(); i++ )
+        {
+            cout << " " << solver.clauseFromModel->getAt( i ).getVariable()->getId();
+        }
+        cout << endl;
+
+        for( unsigned int i = 0; i < solver.clauseFromModel->size(); i++ )
+            solver.addVariableInLowerEstimate( solver.clauseFromModel->getAt( i ).getVariable() );
+        printLowerEstimate();
         
-        for( unsigned int i = 0; i < clauseFromModel->size(); i++ )
-            cout << *clauseFromModel->getAt( i ).getVariable() << " ";
-        cout << endl;        
     }
 }
 
@@ -175,7 +180,7 @@ WaspFacade::solveQueryWaspApproach()
         uint64_t upperEstimateSize = solver.getPreferredChoices().size();
         uint64_t diff = 0;
         cout << "Answers from well founded: " << lowerEstimateSize << endl;
-        cout << "Number of atoms to try: " << upperEstimateSize << endl;        
+        //cout << "Number of atoms to try: " << upperEstimateSize << endl;        
         
         printLowerEstimate();
         solver.printUpperEstimate();
@@ -201,10 +206,10 @@ WaspFacade::solveQueryWaspApproach()
                 break;
         }
         
-        if( numberOfModels > 0 )
-            cout << "Avg of cut Models: " << diff / numberOfModels << endl;
-        cout << "Answers not in well founded: " << solver.getLowerEstimate().size() - lowerEstimateSize << endl;
-        cout << "Enumerated Models: " << numberOfModels << endl;
+//        if( numberOfModels > 0 )
+//            cerr << "Avg of cut Models: " << diff / numberOfModels << endl;
+//        cerr << "Answers not in well founded: " << solver.getLowerEstimate().size() - lowerEstimateSize << endl;
+//        cerr << "Enumerated Models: " << numberOfModels << endl;
     }
 
     if( numberOfModels == 0 )
@@ -214,10 +219,7 @@ WaspFacade::solveQueryWaspApproach()
     }
     else
     {
-        cout << "Cautious consequences:" << endl;
-        for( unsigned int i = 0; i < solver.getLowerEstimate().size(); i++ )
-            cout << *solver.getLowerEstimate()[ i ] << " ";
-        cout << endl;
+        printLowerEstimate();
     }
 }
 
@@ -234,7 +236,7 @@ WaspFacade::solveQueryWaspApproachFirstModel()
         uint64_t upperEstimateSize = solver.getPreferredChoices().size();
         uint64_t diff = 0;
         cout << "Answers from well founded: " << lowerEstimateSize << endl;
-        cout << "Number of atoms to try: " << upperEstimateSize << endl;        
+        //cout << "Number of atoms to try: " << upperEstimateSize << endl;        
         
         printLowerEstimate();
         solver.printUpperEstimate();
@@ -275,9 +277,9 @@ WaspFacade::solveQueryWaspApproachFirstModel()
         }
         
         if( numberOfModels > 0 )
-            cout << "Avg of cut Models: " << diff / numberOfModels << endl;
-        cout << "Answers not in well founded: " << solver.getLowerEstimate().size() - lowerEstimateSize << endl;
-        cout << "Enumerated Models: " << numberOfModels << endl;
+            cerr << "Avg of cut Models: " << diff / numberOfModels << endl;
+        cerr << "Answers not in well founded: " << solver.getLowerEstimate().size() - lowerEstimateSize << endl;
+        cerr << "Enumerated Models: " << numberOfModels << endl;
     }
 
     if( numberOfModels == 0 )
@@ -287,10 +289,10 @@ WaspFacade::solveQueryWaspApproachFirstModel()
     }
     else
     {
-        cout << "Cautious consequences:" << endl;
+        cerr << "Cautious consequences:" << endl;
         for( unsigned int i = 0; i < solver.getLowerEstimate().size(); i++ )
-            cout << *solver.getLowerEstimate()[ i ] << " ";
-        cout << endl;
+            cerr << *solver.getLowerEstimate()[ i ] << " ";
+        cerr << endl;
     }
 }
 
@@ -329,18 +331,18 @@ WaspFacade::solveQueryHybridApproach()
     }
     else
     {
-        assert( clauseFromModel != NULL );
-        cout << "Avg of cut Models: " << diff / numberOfModels << endl;
-        cout << "Answers not in well founded: " << ( solver.getLowerEstimate().size() + clauseFromModel->size() ) - lowerEstimateInitialSize << endl;
-        cout << "Enumerated Models: " << numberOfModels << endl;
+        assert( solver.clauseFromModel != NULL );
+        cerr << "Avg of cut Models: " << diff / numberOfModels << endl;
+        cerr << "Answers not in well founded: " << ( solver.getLowerEstimate().size() + solver.clauseFromModel->size() ) - lowerEstimateInitialSize << endl;
+        cerr << "Enumerated Models: " << numberOfModels << endl;
 
-        cout << "Cautious consequences:" << endl;
+        cerr << "Cautious consequences:" << endl;
         for( unsigned int i = 0; i < solver.getLowerEstimate().size(); i++ )
-            cout << *solver.getLowerEstimate()[ i ] << " ";
+            cerr << *solver.getLowerEstimate()[ i ] << " ";
         
-        for( unsigned int i = 0; i < clauseFromModel->size(); i++ )
-            cout << *clauseFromModel->getAt( i ).getVariable() << " ";
-        cout << endl;
+        for( unsigned int i = 0; i < solver.clauseFromModel->size(); i++ )
+            cerr << *solver.clauseFromModel->getAt( i ).getVariable() << " ";
+        cerr << endl;
     }
 }
 
@@ -456,10 +458,10 @@ bool
 WaspFacade::claspApproachForQuery(
     unsigned int& diff )
 {   
-    if( clauseFromModel == NULL )
+    if( solver.clauseFromModel == NULL )
     {
-        clauseFromModel = solver.computeClauseFromModel();
-        clauseFromModel->canBeSimplified = false;
+        solver.clauseFromModel = solver.computeClauseFromModel();
+        solver.clauseFromModel->canBeSimplified = false;
     }
     else
     {
@@ -468,25 +470,25 @@ WaspFacade::claspApproachForQuery(
         unsigned int secondMaxLevel = 0;
         unsigned int secondMaxPosition = 0;
 
-        unsigned int initialClauseFromModelSize = clauseFromModel->size();
-        if( clauseFromModel->size() > 1 )
-            clauseFromModel->detachClause();
+        unsigned int initialClauseFromModelSize = solver.clauseFromModel->size();
+        if( solver.clauseFromModel->size() > 1 )
+            solver.clauseFromModel->detachClause();
 
         unsigned int size = solver.getLowerEstimate().size();
-        for( unsigned int i = 0; i < clauseFromModel->size(); )
+        for( unsigned int i = 0; i < solver.clauseFromModel->size(); )
         {
-            Variable* var = clauseFromModel->getAt( i ).getVariable();
+            Variable* var = solver.clauseFromModel->getAt( i ).getVariable();
             unsigned int dl = var->getDecisionLevel();            
             
             if( !var->isTrue() )
             {
-                clauseFromModel->swapLiteralsNoWatches( i, clauseFromModel->size() - 1 );
-                clauseFromModel->removeLastLiteralNoWatches();
+                solver.clauseFromModel->swapLiteralsNoWatches( i, solver.clauseFromModel->size() - 1 );
+                solver.clauseFromModel->removeLastLiteralNoWatches();
             }
             else if( dl == 0 )
             {
-                clauseFromModel->swapLiteralsNoWatches( i, clauseFromModel->size() - 1 );
-                clauseFromModel->removeLastLiteralNoWatches();
+                solver.clauseFromModel->swapLiteralsNoWatches( i, solver.clauseFromModel->size() - 1 );
+                solver.clauseFromModel->removeLastLiteralNoWatches();
                 solver.addVariableInLowerEstimate( var );
             }
             else
@@ -507,50 +509,50 @@ WaspFacade::claspApproachForQuery(
             }
         }
 
-        diff = diff + ( initialClauseFromModelSize - clauseFromModel->size() );
+        diff = diff + ( initialClauseFromModelSize - solver.clauseFromModel->size() );
         if( size < solver.getLowerEstimate().size() )
             solver.printLowerEstimate();
 
-        if( clauseFromModel->size() > 1 )
+        if( solver.clauseFromModel->size() > 1 )
         {
             assert( maxLevel > 0 );
             assert( secondMaxLevel > 0 );
 
-            clauseFromModel->swapLiteralsNoWatches( 0, maxPosition );
-            clauseFromModel->swapLiteralsNoWatches( 1, secondMaxPosition != 0 ? secondMaxPosition : maxPosition );
+            solver.clauseFromModel->swapLiteralsNoWatches( 0, maxPosition );
+            solver.clauseFromModel->swapLiteralsNoWatches( 1, secondMaxPosition != 0 ? secondMaxPosition : maxPosition );
             statistics( onAddingClause( size ) );
-            clauseFromModel->attachClause();            
+            solver.clauseFromModel->attachClause();            
         }
     }
 
-    assert( clauseFromModel != NULL );
+    assert( solver.clauseFromModel != NULL );
     
     printTime( cout );
-    cout << "Possible answers (" << ( clauseFromModel->size() + solver.getLowerEstimate().size() ) << "; " << clauseFromModel->size() << "):" << endl;
-//    for( unsigned int i = 0; i < clauseFromModel->size(); i++ )
-//    {
-//        cout << " " << *clauseFromModel->getAt( i ).getVariable();
-//    }
-//    cout << endl;
+    cout << "Possible answers (" << ( solver.clauseFromModel->size() + solver.getLowerEstimate().size() ) << "; " << solver.clauseFromModel->size() << "):" << endl;
+    for( unsigned int i = 0; i < solver.clauseFromModel->size(); i++ )
+    {
+        cout << " " << solver.clauseFromModel->getAt( i ).getVariable()->getId();
+    }
+    cout << endl;
 
-    if( clauseFromModel->size() == 0 )
+    if( solver.clauseFromModel->size() == 0 )
         return false;
 
-    unsigned int size = clauseFromModel->size();
+    unsigned int size = solver.clauseFromModel->size();
     if( size > 1 )
     {
-        unsigned int unrollLevel = clauseFromModel->getAt( 1 ).getDecisionLevel();
-        if( clauseFromModel->getAt( 0 ).getDecisionLevel() == unrollLevel )
+        unsigned int unrollLevel = solver.clauseFromModel->getAt( 1 ).getDecisionLevel();
+        if( solver.clauseFromModel->getAt( 0 ).getDecisionLevel() == unrollLevel )
             --unrollLevel;
         
         if( solver.getQueryType() == CLASPQUERYRESTART )
             unrollLevel = 0;
 
         solver.unroll( unrollLevel );
-        if( !clauseFromModel->getAt( 1 ).isUndefined() )
+        if( !solver.clauseFromModel->getAt( 1 ).isUndefined() )
         {
-            assert( clauseFromModel->getAt( 0 ).isUndefined() );
-            solver.assignLiteral( clauseFromModel );
+            assert( solver.clauseFromModel->getAt( 0 ).isUndefined() );
+            solver.assignLiteral( solver.clauseFromModel );
         }
     }
     else
@@ -558,7 +560,7 @@ WaspFacade::claspApproachForQuery(
         assert( size == 1 );
         solver.doRestart();
         solver.simplifyOnRestart();
-        solver.assignLiteral( clauseFromModel->getAt( 0 ) );                        
+        solver.assignLiteral( solver.clauseFromModel->getAt( 0 ) );                        
         solver.clearConflictStatus();        
     }
     return true;

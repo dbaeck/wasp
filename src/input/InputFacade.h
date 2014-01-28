@@ -98,10 +98,10 @@ InputFacade::parse()
         }
     }
 
-    if( !cin.good() && !cin.eof() )
-    {   
-        ErrorMessage::errorDuringParsing( "Unexpected symbol." );
-    }    
+//    if( !cin.good() && !cin.eof() )
+//    {   
+//        ErrorMessage::errorDuringParsing( "Unexpected symbol." );
+//    }    
 }
 
 

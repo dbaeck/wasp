@@ -50,6 +50,8 @@ class Solver
         inline Solver();
         ~Solver();
         
+        Clause* clauseFromModel;
+
         inline void greetings(){ outputBuilder->greetings(); }
         
         inline void init();
@@ -269,6 +271,7 @@ class Solver
 
 Solver::Solver() 
 : 
+    clauseFromModel( NULL ),
     currentDecisionLevel( 0 ),
     conflictLiteral( NULL ),
     conflictClause( NULL ),
@@ -490,6 +493,13 @@ Solver::unrollOne()
     unroll( currentDecisionLevel - 1 );
 }
 
+#include <cstdio>
+#include <sys/select.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
+bool hasNewInput();
+
 void
 Solver::doRestart()
 {
@@ -585,6 +595,65 @@ bool
 Solver::chooseLiteral()
 {
     Literal choice;
+    if( currentDecisionLevel == 0 ) {
+//        cerr << "RESTART" << endl;
+        while( hasNewInput() ) {
+//            cerr << "HAS INPUT" << endl;
+            char buff[1024];
+            cin.getline( buff, 1023 );
+            switch( buff[ 0 ] ) {
+                case 'a': {
+                    Variable* var =  getVariable( atoi( buff + 2 ) );
+                    //cerr << "A " << var->getId() << endl;
+                    if( !var->isTrue() ) {
+                        if( var->isFalse() ) {
+                            return false;
+                        }
+                        lowerEstimate.push_back( var );
+                        assignLiteral( Literal( var, POSITIVE ) );
+                        while( hasNextVariableToPropagate() )
+                        {
+                            nextValueOfPropagation--;            
+                            Variable* variableToPropagate = getNextVariableToPropagate();
+                            propagate( variableToPropagate );
+
+                            if( conflictDetected() )
+                                return false;
+                        }
+                        
+                        simplifyOnRestart();
+                    }
+                    break;
+                }
+                    
+                case 'r': {
+                    Variable* var = getVariable( atoi( buff + 2 ) );
+                    //cerr << "R " << var->getId() << endl;
+                    Literal lit( var, NEGATIVE );
+                    if( clauseFromModel != NULL ) {
+                        clauseFromModel->detachClause();
+                        for( unsigned i = 0; i < clauseFromModel->size(); i++ ) {
+                            if( clauseFromModel->getAt( i ) == lit ) {
+                                clauseFromModel->swapLiteralsNoWatches( i, clauseFromModel->size() - 1 );
+                                clauseFromModel->removeLastLiteralNoWatches();
+                                break;
+                            }
+                        }
+                        clauseFromModel->attachClause();
+                    }
+                    else {
+                        remove( preferredChoices.begin(), preferredChoices.end(), var );
+                    }
+                    break;
+                }
+                
+                default:
+                    continue;
+            }
+        }
+        
+    }
+    
     if( currentDecisionLevel == 0 && firstChoiceFromQuery )
     {
         assert( !preferredChoices.empty() );        
@@ -993,8 +1062,8 @@ Solver::printLowerEstimate()
 {
     printTime( cout );
     cout << "Certain answers (" << lowerEstimate.size() << "):" << endl;
-//    for( unsigned int i = 0; i < lowerEstimate.size(); i++ )
-//        cout << *lowerEstimate[ i ] << " ";
+    for( unsigned int i = 0; i < lowerEstimate.size(); i++ )
+        cout << lowerEstimate[ i ]->getId() << " ";
     cout << endl;
 }
 
@@ -1004,8 +1073,8 @@ Solver::printUpperEstimate()
     printTime( cout );
     cout << "Possible answers (" << ( preferredChoices.size() + lowerEstimate.size() ) << "; " << preferredChoices.size() << "):" << endl;
 //    cout << "Possible answers (" << preferredChoices.size() << "):" << endl;
-//    for( unsigned int i = 0; i < preferredChoices.size(); i++ )
-//        cout << *preferredChoices[ i ] << " ";
+    for( unsigned int i = 0; i < preferredChoices.size(); i++ )
+        cout << preferredChoices[ i ]->getId() << " ";
     cout << endl;    
 }
 

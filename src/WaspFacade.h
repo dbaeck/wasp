@@ -55,7 +55,6 @@ class WaspFacade
         bool printProgram;
         //vector< Variable* > lowerEstimate;
         //vector< Variable* > upperEstimate;
-        Clause* clauseFromModel;
         
         void shrinkUpperEstimate();
         
@@ -70,7 +69,7 @@ class WaspFacade
         inline void printLowerEstimate();
 };
 
-WaspFacade::WaspFacade() : numberOfModels( 0 ), maxModels( 1 ), printProgram( false ), clauseFromModel( NULL )
+WaspFacade::WaspFacade() : numberOfModels( 0 ), maxModels( 1 ), printProgram( false )
 {    
 }
 
