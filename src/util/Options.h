@@ -69,6 +69,8 @@ namespace wasp
             static unsigned int timeLimit;
             
             static unsigned int query;
+            
+            static bool multi;
     };
 };
 

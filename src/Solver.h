@@ -190,10 +190,17 @@ class Solver
         inline bool waspFirstModelApproachForQuery() const { return query == WASPQUERYFIRSTMODEL; }
         inline bool hybridApproachForQuery() const { return query == HYBRIDQUERY; }
         
-        inline void printLowerEstimate();
-        inline void printUpperEstimate();
+        inline void printLowerEstimate( bool initial );
+        inline void printUpperEstimate( bool initial );
+        inline void printUpperEstimateClauseFromModel( bool initial );
         
         inline void setFirstChoiceFromQuery( bool value ){ firstChoiceFromQuery = value; }
+        inline bool propagateLiteralOnRestart( Literal literal );
+        
+        inline void setMultiSolver( bool m ){ multi = m; }
+        inline bool hasMultiSolver() const{ return multi; }
+        inline void printLearnedClauseForMultiSolver( Clause* clause, bool unary );
+        inline void printLiteralForMultiSolver( Literal lit );
         
     private:
         inline Variable* addVariableInternal();
@@ -225,6 +232,8 @@ class Solver
         unsigned int getNumberOfUndefined() const;
         bool allClausesSatisfied() const;
         
+        bool checkForNewMessages();
+        
         unsigned int assignedVariablesAtLevelZero;
         int64_t nextValueOfPropagation;
         
@@ -240,7 +249,8 @@ class Solver
         vector< Variable* > lowerEstimate;
 
         bool firstChoiceFromQuery;
-        
+        bool multi;
+                
         struct DeletionCounters
         {
             Activity increment;
@@ -595,64 +605,9 @@ bool
 Solver::chooseLiteral()
 {
     Literal choice;
-    if( currentDecisionLevel == 0 ) {
-//        cerr << "RESTART" << endl;
-        while( hasNewInput() ) {
-//            cerr << "HAS INPUT" << endl;
-            char buff[1024];
-            cin.getline( buff, 1023 );
-            switch( buff[ 0 ] ) {
-                case 'a': {
-                    Variable* var =  getVariable( atoi( buff + 2 ) );
-                    //cerr << "A " << var->getId() << endl;
-                    if( !var->isTrue() ) {
-                        if( var->isFalse() ) {
-                            return false;
-                        }
-                        lowerEstimate.push_back( var );
-                        assignLiteral( Literal( var, POSITIVE ) );
-                        while( hasNextVariableToPropagate() )
-                        {
-                            nextValueOfPropagation--;            
-                            Variable* variableToPropagate = getNextVariableToPropagate();
-                            propagate( variableToPropagate );
-
-                            if( conflictDetected() )
-                                return false;
-                        }
-                        
-                        simplifyOnRestart();
-                    }
-                    break;
-                }
-                    
-                case 'r': {
-                    Variable* var = getVariable( atoi( buff + 2 ) );
-                    //cerr << "R " << var->getId() << endl;
-                    Literal lit( var, NEGATIVE );
-                    if( clauseFromModel != NULL ) {
-                        clauseFromModel->detachClause();
-                        for( unsigned i = 0; i < clauseFromModel->size(); i++ ) {
-                            if( clauseFromModel->getAt( i ) == lit ) {
-                                clauseFromModel->swapLiteralsNoWatches( i, clauseFromModel->size() - 1 );
-                                clauseFromModel->removeLastLiteralNoWatches();
-                                break;
-                            }
-                        }
-                        clauseFromModel->attachClause();
-                    }
-                    else {
-                        remove( preferredChoices.begin(), preferredChoices.end(), var );
-                    }
-                    break;
-                }
-                
-                default:
-                    continue;
-            }
-        }
-        
-    }
+    if( currentDecisionLevel == 0 && multi )
+        if( !checkForNewMessages() )
+            return false;
     
     if( currentDecisionLevel == 0 && firstChoiceFromQuery )
     {
@@ -693,7 +648,7 @@ Solver::chooseLiteral()
         swap( preferredChoices[ maxIndex ], preferredChoices[ 0 ] );
         
         if( oldSize != lowerEstimate.size() )
-            printLowerEstimate();
+            printLowerEstimate( false );
         
         if( preferredChoices.empty() )
         {
@@ -726,6 +681,9 @@ Solver::analyzeConflict()
     
     if( learnedClause->size() == 1 )
     {
+        if( multi )
+            printLearnedClauseForMultiSolver( learnedClause, true );
+
         doRestart();
         assignLiteral( learnedClause->getAt( 0 ) );        
 //        delete learnedClause;
@@ -742,7 +700,7 @@ Solver::analyzeConflict()
                 return false;
         }
         
-        simplifyOnRestart();
+        simplifyOnRestart();                
     }
     else
     {
@@ -750,6 +708,10 @@ Solver::analyzeConflict()
         assert( learnedClause->getAt( 0 ).getDecisionLevel() == currentDecisionLevel );
         assert( learnedClause->getAt( 1 ).getDecisionLevel() == learnedClause->getMaxDecisionLevel( 1, learnedClause->size() ) );
         addLearnedClause( learnedClause );
+        
+        if( multi && learnedClause->size() == 2 )
+            printLearnedClauseForMultiSolver( learnedClause, false );
+
 
         if( restart->hasToRestart() )
         {
@@ -1058,24 +1020,125 @@ Solver::releaseClause(
 }
 
 void
-Solver::printLowerEstimate()
+Solver::printLowerEstimate(
+    bool initial )
 {
-    printTime( cout );
-    cout << "Certain answers (" << lowerEstimate.size() << "):" << endl;
-    for( unsigned int i = 0; i < lowerEstimate.size(); i++ )
-        cout << lowerEstimate[ i ]->getId() << " ";
-    cout << endl;
+    if( multi )
+    {
+        if( initial )
+            cout << "c";
+        else
+            cout << "a";
+        for( unsigned int i = 0; i < lowerEstimate.size(); i++ )
+            cout << " " << lowerEstimate[ i ]->getId();
+        cout << endl;
+    }
+    else
+    {
+        printTime( cout );
+        cout << "Certain answers (" << lowerEstimate.size() << "):" << endl;
+        for( unsigned int i = 0; i < lowerEstimate.size(); i++ )
+            cout << *lowerEstimate[ i ] << " ";
+        cout << endl;
+    }
 }
 
 void
-Solver::printUpperEstimate()
+Solver::printUpperEstimate(
+    bool initial )
 {
-    printTime( cout );
-    cout << "Possible answers (" << ( preferredChoices.size() + lowerEstimate.size() ) << "; " << preferredChoices.size() << "):" << endl;
-//    cout << "Possible answers (" << preferredChoices.size() << "):" << endl;
-    for( unsigned int i = 0; i < preferredChoices.size(); i++ )
-        cout << preferredChoices[ i ]->getId() << " ";
-    cout << endl;    
+    if( multi )
+    {
+        if( initial )
+            cout << "p";
+        else
+            cout << "r";
+        for( unsigned int i = 0; i < preferredChoices.size(); i++ )
+            cout << " " << preferredChoices[ i ]->getId();
+        cout << endl;
+    }
+    else
+    {
+        printTime( cout );
+        cout << "Possible answers (" << ( preferredChoices.size() + lowerEstimate.size() ) << "; " << preferredChoices.size() << "):" << endl;
+        for( unsigned int i = 0; i < preferredChoices.size(); i++ )
+            cout << *preferredChoices[ i ] << " ";
+        cout << endl;    
+    }
+}
+
+void
+Solver::printUpperEstimateClauseFromModel(
+    bool initial )
+{
+    if( multi )
+    {
+        if( initial )
+            cout << "p";
+        else
+            cout << "r";
+        for( unsigned int i = 0; i < clauseFromModel->size(); i++ )
+            cout << " " << clauseFromModel->getAt( i ).getVariable()->getId();
+        cout << endl;
+    }
+    else
+    {
+        printTime( cout );
+        cout << "Possible answers (" << ( clauseFromModel->size() + getLowerEstimate().size() ) << "; " << 0 << "):" << endl;
+        for( unsigned int i = 0; i < clauseFromModel->size(); i++ )
+            cout << " " << *( clauseFromModel->getAt( i ).getVariable() );
+        
+        cout << endl;
+    }
+}
+
+bool
+Solver::propagateLiteralOnRestart(
+    Literal literal )
+{
+    assignLiteral( literal );
+    while( hasNextVariableToPropagate() )
+    {
+        nextValueOfPropagation--;            
+        Variable* variableToPropagate = getNextVariableToPropagate();
+        propagate( variableToPropagate );
+
+        if( conflictDetected() )
+            return false;
+    }
+
+    simplifyOnRestart();
+    
+    return true;
+}
+
+void
+Solver::printLiteralForMultiSolver(
+    Literal lit )
+{
+    cout << ( lit.getSign() == NEGATIVE ? "-" : "" ) << lit.getVariable()->getId();
+}
+
+void
+Solver::printLearnedClauseForMultiSolver(
+    Clause* learnedClause,
+    bool unary )
+{
+    if( unary )
+    {
+        cout << "u ";
+        printLiteralForMultiSolver( learnedClause->getAt( 0 ) );
+        cout << endl;
+    }
+    else
+    {
+        assert( learnedClause->size() == 2 );
+        cout << "b ";
+        printLiteralForMultiSolver( learnedClause->getAt( 0 ) );
+        cout << " ";
+        printLiteralForMultiSolver( learnedClause->getAt( 1 ) );
+        cout << endl;
+    }
 }
 
 #endif	/* SOLVER_H */

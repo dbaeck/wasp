@@ -69,7 +69,7 @@ WaspFacade::solve()
             return;
             
         case WASPQUERYFIRSTMODEL:
-            solveQueryWaspApproachFirstModel();
+            solveQueryWaspApproach();
             return;
             
         case HYBRIDQUERY:
@@ -127,8 +127,7 @@ WaspFacade::solveQueryClaspApproach()
         lowerEstimateInitialSize = solver.getLowerEstimate().size();
         cout << "Answers from well founded: " << lowerEstimateInitialSize << endl;
         
-        printLowerEstimate();
-        solver.printUpperEstimate();
+        printInitialState();
 
         while( solver.solve() )
         {
@@ -151,18 +150,10 @@ WaspFacade::solveQueryClaspApproach()
 //        cerr << "Answers not in well founded: " << ( solver.getLowerEstimate().size() + solver.clauseFromModel->size() ) - lowerEstimateInitialSize << endl;
 //        cerr << "Enumerated Models: " << numberOfModels << endl;
 
-        printTime( cout );
-        cout << "Possible answers (" << ( solver.clauseFromModel->size() + solver.getLowerEstimate().size() ) << "; " << 0 << "):" << endl;
-        for( unsigned int i = 0; i < solver.clauseFromModel->size(); i++ )
-        {
-            cout << " " << solver.clauseFromModel->getAt( i ).getVariable()->getId();
-        }
-        cout << endl;
-
+        solver.printUpperEstimateClauseFromModel( false );
         for( unsigned int i = 0; i < solver.clauseFromModel->size(); i++ )
             solver.addVariableInLowerEstimate( solver.clauseFromModel->getAt( i ).getVariable() );
-        printLowerEstimate();
-        
+        solver.printLowerEstimate( false );
     }
 }
 
@@ -171,8 +162,7 @@ WaspFacade::solveQueryWaspApproach()
 {
     assert( solver.waspApproachForQuery() );
     solver.init();
-    solver.setFirstChoiceFromQuery( true );
-
+    
     if( solver.preprocessing() )
     {
         computeLowerUpperEstimate();
@@ -182,9 +172,27 @@ WaspFacade::solveQueryWaspApproach()
         cout << "Answers from well founded: " << lowerEstimateSize << endl;
         //cout << "Number of atoms to try: " << upperEstimateSize << endl;        
         
-        printLowerEstimate();
-        solver.printUpperEstimate();
+        printInitialState();
+        
+        if( solver.waspFirstModelApproachForQuery() )
+        {
+            if( solver.solve() )
+            {
+                solver.setFirstChoiceFromQuery( true );
+                ++numberOfModels;
+                shrinkUpperEstimate();
+                diff = diff + ( upperEstimateSize - solver.getPreferredChoices().size() );
+                upperEstimateSize = solver.getPreferredChoices().size();
+                solver.printUpperEstimate( false );
+                solver.doRestart();
+                solver.simplifyOnRestart();
+                solver.clearConflictStatus();
+            }
+            else
+                solver.getPreferredChoices().clear();
+        }        
 
+        solver.setFirstChoiceFromQuery( true );
         while( !solver.getPreferredChoices().empty() )
         {
             if( solver.solve() )
@@ -193,7 +201,7 @@ WaspFacade::solveQueryWaspApproach()
                 shrinkUpperEstimate();
                 diff = diff + ( upperEstimateSize - solver.getPreferredChoices().size() );
                 upperEstimateSize = solver.getPreferredChoices().size();
-                solver.printUpperEstimate();
+                solver.printUpperEstimate( false );
 
                 if( solver.getPreferredChoices().empty() )
                     break;
@@ -218,83 +226,80 @@ WaspFacade::solveQueryWaspApproach()
         solver.foundIncoherence();
     }
     else
-    {
-        printLowerEstimate();
-    }
+        solver.printLowerEstimate( false );
 }
 
-void
-WaspFacade::solveQueryWaspApproachFirstModel()
-{
-    assert( solver.waspFirstModelApproachForQuery() );
-    solver.init();
-
-    if( solver.preprocessing() )
-    {
-        computeLowerUpperEstimate();
-        uint64_t lowerEstimateSize = solver.getLowerEstimate().size();
-        uint64_t upperEstimateSize = solver.getPreferredChoices().size();
-        uint64_t diff = 0;
-        cout << "Answers from well founded: " << lowerEstimateSize << endl;
-        //cout << "Number of atoms to try: " << upperEstimateSize << endl;        
-        
-        printLowerEstimate();
-        solver.printUpperEstimate();
-
-        if( solver.solve() )
-        {                
-            solver.setFirstChoiceFromQuery( true );
-            ++numberOfModels;
-            shrinkUpperEstimate();
-            diff = diff + ( upperEstimateSize - solver.getPreferredChoices().size() );
-            upperEstimateSize = solver.getPreferredChoices().size();
-            solver.printUpperEstimate();                
-            solver.doRestart();
-            solver.simplifyOnRestart();
-            solver.clearConflictStatus();
-        }
-        else
-            solver.getPreferredChoices().clear();
-
-        while( !solver.getPreferredChoices().empty() )
-        {
-            if( solver.solve() )
-            {                
-                shrinkUpperEstimate();
-                diff = diff + ( upperEstimateSize - solver.getPreferredChoices().size() );
-                upperEstimateSize = solver.getPreferredChoices().size();
-                solver.printUpperEstimate();
-
-                if( solver.getPreferredChoices().empty() )
-                    break;
-
-                solver.doRestart();
-                solver.simplifyOnRestart();
-                solver.clearConflictStatus();
-            }
-            else
-                break;
-        }
-        
-        if( numberOfModels > 0 )
-            cerr << "Avg of cut Models: " << diff / numberOfModels << endl;
-        cerr << "Answers not in well founded: " << solver.getLowerEstimate().size() - lowerEstimateSize << endl;
-        cerr << "Enumerated Models: " << numberOfModels << endl;
-    }
-
-    if( numberOfModels == 0 )
-    {
-        trace_msg( enumeration, 1, "No model found." );
-        solver.foundIncoherence();
-    }
-    else
-    {
-        cerr << "Cautious consequences:" << endl;
-        for( unsigned int i = 0; i < solver.getLowerEstimate().size(); i++ )
-            cerr << *solver.getLowerEstimate()[ i ] << " ";
-        cerr << endl;
-    }
-}
+//void
+//WaspFacade::solveQueryWaspApproachFirstModel()
+//{
+//    assert( solver.waspFirstModelApproachForQuery() );
+//    solver.init();
+//
+//    if( solver.preprocessing() )
+//    {
+//        computeLowerUpperEstimate();
+//        uint64_t lowerEstimateSize = solver.getLowerEstimate().size();
+//        uint64_t upperEstimateSize = solver.getPreferredChoices().size();
+//        uint64_t diff = 0;
+//        cout << "Answers from well founded: " << lowerEstimateSize << endl;
+//        //cout << "Number of atoms to try: " << upperEstimateSize << endl;        
+//        
+//        printInitialState();
+//
+//        if( solver.solve() )
+//        {                
+//            solver.setFirstChoiceFromQuery( true );
+//            ++numberOfModels;
+//            shrinkUpperEstimate();
+//            diff = diff + ( upperEstimateSize - solver.getPreferredChoices().size() );
+//            upperEstimateSize = solver.getPreferredChoices().size();
+//            solver.printUpperEstimate();                
+//            solver.doRestart();
+//            solver.simplifyOnRestart();
+//            solver.clearConflictStatus();
+//        }
+//        else
+//            solver.getPreferredChoices().clear();
+//
+//        while( !solver.getPreferredChoices().empty() )
+//        {
+//            if( solver.solve() )
+//            {                
+//                shrinkUpperEstimate();
+//                diff = diff + ( upperEstimateSize - solver.getPreferredChoices().size() );
+//                upperEstimateSize = solver.getPreferredChoices().size();
+//                solver.printUpperEstimate();
+//
+//                if( solver.getPreferredChoices().empty() )
+//                    break;
+//
+//                solver.doRestart();
+//                solver.simplifyOnRestart();
+//                solver.clearConflictStatus();
+//            }
+//            else
+//                break;
+//        }
+//        
+//        if( numberOfModels > 0 )
+//            cerr << "Avg of cut Models: " << diff / numberOfModels << endl;
+//        cerr << "Answers not in well founded: " << solver.getLowerEstimate().size() - lowerEstimateSize << endl;
+//        cerr << "Enumerated Models: " << numberOfModels << endl;
+//    }
+//
+//    if( numberOfModels == 0 )
+//    {
+//        trace_msg( enumeration, 1, "No model found." );
+//        solver.foundIncoherence();
+//    }
+//    else
+//    {
+//        cerr << "Cautious consequences:" << endl;
+//        for( unsigned int i = 0; i < solver.getLowerEstimate().size(); i++ )
+//            cerr << *solver.getLowerEstimate()[ i ] << " ";
+//        cerr << endl;
+//    }
+//}
 
 void
 WaspFacade::solveQueryHybridApproach()
@@ -310,8 +315,7 @@ WaspFacade::solveQueryHybridApproach()
         lowerEstimateInitialSize = solver.getLowerEstimate().size();
         cout << "Answers from well founded: " << lowerEstimateInitialSize << endl;
         
-        printLowerEstimate();
-        solver.printUpperEstimate();
+        printInitialState();
 
         while( solver.solve() )
         {
@@ -511,7 +515,7 @@ WaspFacade::claspApproachForQuery(
 
         diff = diff + ( initialClauseFromModelSize - solver.clauseFromModel->size() );
         if( size < solver.getLowerEstimate().size() )
-            solver.printLowerEstimate();
+            solver.printLowerEstimate( false );
 
         if( solver.clauseFromModel->size() > 1 )
         {
@@ -527,13 +531,7 @@ WaspFacade::claspApproachForQuery(
 
     assert( solver.clauseFromModel != NULL );
     
-    printTime( cout );
-    cout << "Possible answers (" << ( solver.clauseFromModel->size() + solver.getLowerEstimate().size() ) << "; " << solver.clauseFromModel->size() << "):" << endl;
-    for( unsigned int i = 0; i < solver.clauseFromModel->size(); i++ )
-    {
-        cout << " " << solver.clauseFromModel->getAt( i ).getVariable()->getId();
-    }
-    cout << endl;
+    solver.printUpperEstimateClauseFromModel( false );
 
     if( solver.clauseFromModel->size() == 0 )
         return false;

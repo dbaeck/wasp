@@ -296,7 +296,7 @@ Solver::computeClauseFromModel()
     }
     
     if( initialSize < lowerEstimate.size() )
-        printLowerEstimate();
+        printLowerEstimate( false );
     
     if( clause->size() > 1 )
     {    
@@ -729,7 +729,8 @@ Solver::removeSatisfied(
     }
 }
 
-bool hasNewInput() {
+bool hasNewInput()
+{
     if( !cin.good() || cin.eof() )
         return false;
         
@@ -741,4 +742,106 @@ bool hasNewInput() {
     FD_SET(STDIN_FILENO, &fds); //STDIN_FILENO is 0
     select(STDIN_FILENO+1, &fds, NULL, NULL, &tv);
     return FD_ISSET(STDIN_FILENO, &fds);
+}
+
+bool
+Solver::checkForNewMessages()
+{
+    while( hasNewInput() )
+    {
+//            cerr << "HAS INPUT" << endl;
+        char buff [ 1024 ];
+        cin.getline( buff, 1023 );
+        switch( buff[ 0 ] )
+        {
+            //unary clauses
+            case 'u':
+            case 'a': 
+            {
+                Variable* var = getVariable( atoi( buff + 2 ) );
+                //cerr << "A " << var->getId() << endl;
+                if( !var->isTrue() )
+                {
+                    if( var->isFalse() )
+                        return false;
+                    
+                    if( buff[ 0 ] != 'u' )
+                        lowerEstimate.push_back( var );
+
+                    assignLiteral( Literal( var, POSITIVE ) );
+                    while( hasNextVariableToPropagate() )
+                    {
+                        nextValueOfPropagation--;            
+                        Variable* variableToPropagate = getNextVariableToPropagate();
+                        propagate( variableToPropagate );
+
+                        if( conflictDetected() )
+                            return false;
+                    }
+
+                    simplifyOnRestart();
+                }
+                break;
+            }
+
+            case 'r':
+            {
+                Variable* var = getVariable( atoi( buff + 2 ) );
+                //cerr << "R " << var->getId() << endl;
+                Literal lit( var, NEGATIVE );
+                if( clauseFromModel != NULL )
+                {
+                    clauseFromModel->detachClause();
+                    for( unsigned i = 0; i < clauseFromModel->size(); i++ )
+                    {
+                        if( clauseFromModel->getAt( i ) == lit )
+                        {
+                            clauseFromModel->swapLiteralsNoWatches( i, clauseFromModel->size() - 1 );
+                            clauseFromModel->removeLastLiteralNoWatches();
+                            break;
+                        }
+                    }
+                    clauseFromModel->attachClause();
+                }
+                else
+                    remove( preferredChoices.begin(), preferredChoices.end(), var );
+                break;
+            }
+            
+            case 'b':
+            {
+                assert( 0 && "IMPLEMENT GET VARIABLE!!!");
+                exit( 12 );
+                Literal lit;//getVariable( atoi( buff + 2 ) );
+                Literal lit2;
+                
+                if( lit.isTrue() || lit2.isTrue() )
+                    continue;
+                
+                if( lit.isFalse() && lit2.isFalse() )
+                    return false;
+                
+                if( lit.isFalse() )
+                {
+                    if( !propagateLiteralOnRestart( lit ) )
+                        return false;
+                }
+                else if( lit2.isFalse() )
+                {
+                    if( !propagateLiteralOnRestart( lit2 ) )
+                        return false;
+                }
+                
+                Clause* clause = newClause();
+                clause->addLiteral( lit );
+                clause->addLiteral( lit2 );
+                clause->attachClause();
+                addLearnedClause( clause );                
+            }
+
+            default:
+                continue;
+        }
+    }
+    return true;
 }

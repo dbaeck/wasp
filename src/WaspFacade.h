@@ -47,6 +47,8 @@ class WaspFacade
         inline void setPrintProgram( bool printProgram );        
 
         inline void setQuery( unsigned int value );
+        inline void setMultiSolver( bool multi );
+        
     private:
         Solver solver;        
         
@@ -64,9 +66,8 @@ class WaspFacade
         void solveQueryClaspApproach();
         void solveQueryHybridApproach();
         void solveQueryWaspApproach();
-        void solveQueryWaspApproachFirstModel();
         
-        inline void printLowerEstimate();
+        inline void printInitialState();
 };
 
 WaspFacade::WaspFacade() : numberOfModels( 0 ), maxModels( 1 ), printProgram( false )
@@ -119,9 +120,17 @@ WaspFacade::setQuery(
 }
 
 void
-WaspFacade::printLowerEstimate()
+WaspFacade::setMultiSolver(
+    bool multi )
 {
-    solver.printLowerEstimate();
+    solver.setMultiSolver( multi );
+}
+
+void
+WaspFacade::printInitialState()
+{    
+    solver.printLowerEstimate( true );
+    solver.printUpperEstimate( true );
 }
 
 #endif	/* WASPFACADE_H */
