@@ -178,10 +178,10 @@ class Solver
         inline void setQuery( unsigned int q ) { this->query = q; }
         
         inline void addPreferredChoice( Variable* var ) { preferredChoices.push_back( var ); }
-        inline vector< Variable* >& getPreferredChoices() { return preferredChoices; }
+        inline unsigned int numberOfPreferredChoices() const { return preferredChoices.size(); }
         
         inline void addVariableInLowerEstimate( Variable* var ) { lowerEstimate.push_back( var ); }
-        inline const vector< Variable* >& getLowerEstimate() { return lowerEstimate; }
+        inline const vector< Variable* >& getLowerEstimate() const { return lowerEstimate; }
         
         inline unsigned int getQueryType() const { return query; }
         inline bool hasQuery() const { return query != NOQUERY; }
@@ -190,17 +190,19 @@ class Solver
         inline bool waspFirstModelApproachForQuery() const { return query == WASPQUERYFIRSTMODEL; }
         inline bool hybridApproachForQuery() const { return query == HYBRIDQUERY; }
         
-        inline void printLowerEstimate( bool initial );
-        inline void printUpperEstimate( bool initial );
-        inline void printUpperEstimateClauseFromModel( bool initial );
+        inline void printLowerEstimate() const;
+        inline void printUpperEstimate() const;
+        inline void printUpperEstimateClauseFromModel() const;
         
         inline void setFirstChoiceFromQuery( bool value ){ firstChoiceFromQuery = value; }
         inline bool propagateLiteralOnRestart( Literal literal );
         
         inline void setMultiSolver( bool m ){ multi = m; }
         inline bool hasMultiSolver() const{ return multi; }
-        inline void printLearnedClauseForMultiSolver( Clause* clause, bool unary );
-        inline void printLiteralForMultiSolver( Literal lit );
+        inline void printLearnedClauseForMultiSolver( Clause* clause, bool unary ) const;
+        inline void printLiteralForMultiSolver( Literal lit ) const;
+        
+        inline void shrinkUpperEstimate();
         
     private:
         inline Variable* addVariableInternal();
@@ -628,7 +630,7 @@ Solver::chooseLiteral()
             if( !var->isUndefined() )
             {
                 assert( var->getDecisionLevel() == 0 );                    
-                if( var->isTrue() && !hybridApproachForQuery() )
+                if( var->isTrue() && !hybridApproachForQuery() )                                    
                     addVariableInLowerEstimate( var );
 
                 preferredChoices[ i ] = preferredChoices.back();
@@ -647,7 +649,7 @@ Solver::chooseLiteral()
 
         
         if( oldSize != lowerEstimate.size() )
-            printLowerEstimate( false );
+            printLowerEstimate();
         
         if( preferredChoices.empty() )
         {
@@ -657,7 +659,9 @@ Solver::chooseLiteral()
                 return false;
         }
 
-        swap( preferredChoices[ maxIndex ], preferredChoices[ 0 ] );
+        Variable* tmp = preferredChoices[ maxIndex ];
+        preferredChoices[ maxIndex ] = preferredChoices[ 0 ];
+        preferredChoices[ 0 ] = tmp;
         choice = minisatHeuristic.makeAChoice( preferredChoices );
     }
     else
@@ -1020,8 +1024,7 @@ Solver::releaseClause(
 }
 
 void
-Solver::printLowerEstimate(
-    bool initial )
+Solver::printLowerEstimate() const
 {
     if( multi )
     {
@@ -1042,8 +1045,7 @@ Solver::printLowerEstimate(
 }
 
 void
-Solver::printUpperEstimate(
-    bool initial )
+Solver::printUpperEstimate() const
 {
     if( multi )
     {
@@ -1063,8 +1065,7 @@ Solver::printUpperEstimate(
 }
 
 void
-Solver::printUpperEstimateClauseFromModel(
-    bool initial )
+Solver::printUpperEstimateClauseFromModel() const
 {
     if( multi )
     {
@@ -1106,7 +1107,7 @@ Solver::propagateLiteralOnRestart(
 
 void
 Solver::printLiteralForMultiSolver(
-    Literal lit )
+    Literal lit ) const
 {
     cout << ( lit.getSign() == NEGATIVE ? "-" : "" ) << lit.getVariable()->getId();
 }
@@ -1114,7 +1115,7 @@ Solver::printLiteralForMultiSolver(
 void
 Solver::printLearnedClauseForMultiSolver(
     Clause* learnedClause,
-    bool unary )
+    bool unary ) const
 {
     if( unary )
     {
@@ -1130,6 +1131,23 @@ Solver::printLearnedClauseForMultiSolver(
         cout << " ";
         printLiteralForMultiSolver( learnedClause->getAt( 1 ) );
         cout << endl;
+    }
+}
+
+void
+Solver::shrinkUpperEstimate()
+{
+    for( unsigned int i = 0; i < preferredChoices.size(); )
+    {
+        Variable* var = preferredChoices[ i ];
+        assert( !var->isUndefined() );
+        if( !var->isTrue() )
+        {
+            preferredChoices[ i ] = preferredChoices.back();
+            preferredChoices.pop_back();
+        }
+        else
+            ++i;
     }
 }
 

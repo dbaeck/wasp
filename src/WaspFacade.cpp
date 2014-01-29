@@ -147,10 +147,10 @@ WaspFacade::solveQueryClaspApproach()
 //        cerr << "Answers not in well founded: " << ( solver.getLowerEstimate().size() + solver.clauseFromModel->size() ) - lowerEstimateInitialSize << endl;
 //        cerr << "Enumerated Models: " << numberOfModels << endl;
 
-        solver.printUpperEstimateClauseFromModel( false );
+        solver.printUpperEstimateClauseFromModel();
         for( unsigned int i = 0; i < solver.clauseFromModel->size(); i++ )
             solver.addVariableInLowerEstimate( solver.clauseFromModel->getAt( i ).getVariable() );
-        solver.printLowerEstimate( false );
+        solver.printLowerEstimate();
     }
 }
 
@@ -163,7 +163,7 @@ WaspFacade::solveQueryWaspApproach()
     if( solver.preprocessing() )
     {
         computeLowerUpperEstimate();
-        uint64_t upperEstimateSize = solver.getPreferredChoices().size();
+        uint64_t upperEstimateSize = solver.numberOfPreferredChoices();
         uint64_t diff = 0;
         
         printInitialState();
@@ -174,30 +174,30 @@ WaspFacade::solveQueryWaspApproach()
             {
                 solver.setFirstChoiceFromQuery( true );
                 ++numberOfModels;
-                shrinkUpperEstimate();
-                diff = diff + ( upperEstimateSize - solver.getPreferredChoices().size() );
-                upperEstimateSize = solver.getPreferredChoices().size();
-                solver.printUpperEstimate( false );
+                solver.shrinkUpperEstimate();
+                diff = diff + ( upperEstimateSize - solver.numberOfPreferredChoices() );
+                upperEstimateSize = solver.numberOfPreferredChoices();
+                solver.printUpperEstimate();
                 solver.doRestart();
                 solver.simplifyOnRestart();
                 solver.clearConflictStatus();
             }
             else
-                solver.getPreferredChoices().clear();
+                goto foundIncoherence;
         }        
 
         solver.setFirstChoiceFromQuery( true );
-        while( !solver.getPreferredChoices().empty() )
+        while( solver.numberOfPreferredChoices() != 0 )
         {
             if( solver.solve() )
             {
-                
-                shrinkUpperEstimate();
-                diff = diff + ( upperEstimateSize - solver.getPreferredChoices().size() );
-                upperEstimateSize = solver.getPreferredChoices().size();
-                solver.printUpperEstimate( false );
+                ++numberOfModels;
+                solver.shrinkUpperEstimate();
+                diff = diff + ( upperEstimateSize - solver.numberOfPreferredChoices() );
+                upperEstimateSize = solver.numberOfPreferredChoices();
+                solver.printUpperEstimate();
 
-                if( solver.getPreferredChoices().empty() )
+                if( solver.numberOfPreferredChoices() == 0 )
                     break;
 
                 solver.doRestart();
@@ -216,11 +216,12 @@ WaspFacade::solveQueryWaspApproach()
 
     if( numberOfModels == 0 )
     {
+        foundIncoherence:;
         trace_msg( enumeration, 1, "No model found." );
         solver.foundIncoherence();
     }
     else
-        solver.printLowerEstimate( false );
+        solver.printLowerEstimate();
 }
 
 //void
@@ -312,7 +313,8 @@ WaspFacade::solveQueryHybridApproach()
 
         while( solver.solve() )
         {
-            shrinkUpperEstimate();            
+            ++numberOfModels;    
+            solver.shrinkUpperEstimate();            
             if( numberOfModels == 1 )
                 solver.setFirstChoiceFromQuery( true );
             
@@ -508,7 +510,7 @@ WaspFacade::claspApproachForQuery(
 
         diff = diff + ( initialClauseFromModelSize - solver.clauseFromModel->size() );
         if( size < solver.getLowerEstimate().size() )
-            solver.printLowerEstimate( false );
+            solver.printLowerEstimate();
 
         if( solver.clauseFromModel->size() > 1 )
         {
@@ -524,7 +526,7 @@ WaspFacade::claspApproachForQuery(
 
     assert( solver.clauseFromModel != NULL );
     
-    solver.printUpperEstimateClauseFromModel( false );
+    solver.printUpperEstimateClauseFromModel();
 
     if( solver.clauseFromModel->size() == 0 )
         return false;
@@ -555,23 +557,4 @@ WaspFacade::claspApproachForQuery(
         solver.clearConflictStatus();        
     }
     return true;
-}
-
-void
-WaspFacade::shrinkUpperEstimate()
-{
-    ++numberOfModels;
-    vector< Variable* >& upperEstimate = solver.getPreferredChoices();
-    for( unsigned int i = 0; i < upperEstimate.size(); )
-    {
-        Variable* var = upperEstimate[ i ];
-        assert( !var->isUndefined() );
-        if( !var->isTrue() )
-        {
-            upperEstimate[ i ] = upperEstimate.back();
-            upperEstimate.pop_back();
-        }
-        else
-            ++i;
-    }
 }

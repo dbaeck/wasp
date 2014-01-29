@@ -296,7 +296,7 @@ Solver::computeClauseFromModel()
     }
     
     if( initialSize < lowerEstimate.size() )
-        printLowerEstimate( false );
+        printLowerEstimate();
     
     if( clause->size() > 1 )
     {    
@@ -756,25 +756,16 @@ Solver::checkForNewMessages()
         {
             //unary clauses
             case 'u':
+                break;
             case 'a': 
             {
-                Variable* var = getVariable( atoi( buff + 2 ) );
+                unsigned int id = atoi( buff + 2 );                
+                Variable* var = getVariable( id );
                 //cerr << "A " << var->getId() << endl;
                 if( !var->isTrue() )
                 {
                     if( var->isFalse() )
                         return false;
-                    
-                    if( lowerEstimate.size() >= 2 ) {
-                        if(lowerEstimate.back()->getId() == lowerEstimate[lowerEstimate.size()-2]->getId())
-                            cerr << "OOOOOPPPPSSSS " << lowerEstimate.back()->getId() << " " << lowerEstimate[lowerEstimate.size()- 2]->getId() << endl;
-                        
-                    }
-                    
-//                    if( buff[ 0 ] != 'u' ) {
-//                        if( !firstChoiceFromQuery )
-//                            lowerEstimate.push_back( var );
-//                    }
 
                     assignLiteral( Literal( var, POSITIVE ) );
                     while( hasNextVariableToPropagate() )
@@ -812,7 +803,17 @@ Solver::checkForNewMessages()
                     clauseFromModel->attachClause();
                 }
                 else
-                    remove( preferredChoices.begin(), preferredChoices.end(), var );
+                {
+                    for( unsigned int k = 0; k < preferredChoices.size(); k++ )
+                    {
+                        if( preferredChoices[ k ] == var )
+                        {
+                            preferredChoices[ k ] = preferredChoices.back();
+                            preferredChoices.pop_back();
+                            break;
+                        }                        
+                    }                                        
+                }
                 break;
             }
             

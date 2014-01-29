@@ -58,8 +58,6 @@ class WaspFacade
         //vector< Variable* > lowerEstimate;
         //vector< Variable* > upperEstimate;
         
-        void shrinkUpperEstimate();
-        
         inline void computeLowerUpperEstimate();
         bool claspApproachForQuery( unsigned int& diff );
         
@@ -103,7 +101,7 @@ WaspFacade::computeLowerUpperEstimate()
             assert( !var->hasBeenEliminated() );
             if( var->isTrue() )
             {
-                assert( var->getDecisionLevel() == 0 );
+                assert( var->getDecisionLevel() == 0 );                
                 solver.addVariableInLowerEstimate( var );
             }
             else if( var->isUndefined() )
@@ -133,8 +131,8 @@ WaspFacade::printInitialState()
     {
         cout << "Answers from well founded: " << solver.getLowerEstimate().size() << endl;
     }
-    solver.printLowerEstimate( true );
-    solver.printUpperEstimate( true );
+    solver.printLowerEstimate();
+    solver.printUpperEstimate();
 }
 
 #endif	/* WASPFACADE_H */
