@@ -756,7 +756,32 @@ Solver::checkForNewMessages()
         {
             //unary clauses
             case 'u':
+            {
+                int id = atoi( buff + 2 );                
+                Variable* var = getVariable( id > 0 ? id : -id );
+                Literal lit( var, id > 0 ? POSITIVE : NEGATIVE  );
+                //cerr << "A " << var->getId() << endl;
+                if( !lit.isTrue() )
+                {
+                    if( lit.isFalse() )
+                        return false;
+
+                    assignLiteral( lit );
+                    while( hasNextVariableToPropagate() )
+                    {
+                        nextValueOfPropagation--;            
+                        Variable* variableToPropagate = getNextVariableToPropagate();
+                        propagate( variableToPropagate );
+
+                        if( conflictDetected() )
+                            return false;
+                    }
+
+                    simplifyOnRestart();
+                }
                 break;
+            }
+            
             case 'a': 
             {
                 unsigned int id = atoi( buff + 2 );                
@@ -819,10 +844,14 @@ Solver::checkForNewMessages()
             
             case 'b':
             {
-                assert( 0 && "IMPLEMENT GET VARIABLE!!!");
-                exit( 12 );
-                Literal lit;//getVariable( atoi( buff + 2 ) );
-                Literal lit2;
+                stringstream ss(buff + 2);
+                int id, id2;
+                ss >> id >> id2;
+                Variable* var = getVariable( id > 0 ? id : -id );
+                Literal lit( var, id > 0 ? POSITIVE : NEGATIVE  );
+
+                Variable* var2 = getVariable( id2 > 0 ? id2 : -id2 );
+                Literal lit2( var2, id2 > 0 ? POSITIVE : NEGATIVE  );
                 
                 if( lit.isTrue() || lit2.isTrue() )
                     continue;
@@ -832,20 +861,23 @@ Solver::checkForNewMessages()
                 
                 if( lit.isFalse() )
                 {
-                    if( !propagateLiteralOnRestart( lit ) )
+                    if( !propagateLiteralOnRestart( lit2 ) )
                         return false;
+                    continue;
                 }
                 else if( lit2.isFalse() )
                 {
-                    if( !propagateLiteralOnRestart( lit2 ) )
+                    if( !propagateLiteralOnRestart( lit ) )
                         return false;
+                    continue;
                 }
                 
                 Clause* clause = newClause();
                 clause->addLiteral( lit );
                 clause->addLiteral( lit2 );
-                clause->attachClause();
                 addLearnedClause( clause );                
+                
+                break;
             }
 
             default:
