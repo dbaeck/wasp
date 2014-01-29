@@ -886,3 +886,14 @@ Solver::checkForNewMessages()
     }
     return true;
 }
+
+void
+Solver::printNames() const
+{
+    cout << "n";
+    for( unsigned int i = 0 ; i < lowerEstimate.size(); i++ )
+        cout << " " << lowerEstimate[ i ]->getId();
+    for( unsigned int i = 0; i < preferredChoices.size(); i++ )
+        cout << " " << *preferredChoices[ i ];
+    cout << endl;
+}

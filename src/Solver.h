@@ -204,6 +204,8 @@ class Solver
         
         inline void shrinkUpperEstimate();
         
+        void printNames() const;
+        
     private:
         inline Variable* addVariableInternal();
         
