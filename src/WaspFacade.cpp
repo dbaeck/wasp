@@ -119,13 +119,10 @@ WaspFacade::solveQueryClaspApproach()
     assert( solver.claspApproachForQuery() );
     solver.init();
 
-    uint64_t lowerEstimateInitialSize = 0;
     unsigned int diff = 0;
     if( solver.preprocessing() )
     {
         computeLowerUpperEstimate();
-        lowerEstimateInitialSize = solver.getLowerEstimate().size();
-        cout << "Answers from well founded: " << lowerEstimateInitialSize << endl;
         
         printInitialState();
 
@@ -166,11 +163,8 @@ WaspFacade::solveQueryWaspApproach()
     if( solver.preprocessing() )
     {
         computeLowerUpperEstimate();
-        uint64_t lowerEstimateSize = solver.getLowerEstimate().size();
         uint64_t upperEstimateSize = solver.getPreferredChoices().size();
         uint64_t diff = 0;
-        cout << "Answers from well founded: " << lowerEstimateSize << endl;
-        //cout << "Number of atoms to try: " << upperEstimateSize << endl;        
         
         printInitialState();
         
@@ -312,7 +306,6 @@ WaspFacade::solveQueryHybridApproach()
     if( solver.preprocessing() )
     {
         computeLowerUpperEstimate();
-        lowerEstimateInitialSize = solver.getLowerEstimate().size();
         cout << "Answers from well founded: " << lowerEstimateInitialSize << endl;
         
         printInitialState();

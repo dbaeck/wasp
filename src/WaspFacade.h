@@ -128,7 +128,11 @@ WaspFacade::setMultiSolver(
 
 void
 WaspFacade::printInitialState()
-{    
+{
+    if( !solver.hasMultiSolver() )
+    {
+        cout << "Answers from well founded: " << solver.getLowerEstimate().size() << endl;
+    }
     solver.printLowerEstimate( true );
     solver.printUpperEstimate( true );
 }

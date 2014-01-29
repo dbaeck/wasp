@@ -52,7 +52,7 @@ class Solver
         
         Clause* clauseFromModel;
 
-        inline void greetings(){ outputBuilder->greetings(); }
+        inline void greetings(){ if( !multi ) outputBuilder->greetings(); }
         
         inline void init();
         bool solve();
@@ -645,7 +645,6 @@ Solver::chooseLiteral()
             }
         }
 
-        swap( preferredChoices[ maxIndex ], preferredChoices[ 0 ] );
         
         if( oldSize != lowerEstimate.size() )
             printLowerEstimate( false );
@@ -658,6 +657,7 @@ Solver::chooseLiteral()
                 return false;
         }
 
+        swap( preferredChoices[ maxIndex ], preferredChoices[ 0 ] );
         choice = minisatHeuristic.makeAChoice( preferredChoices );
     }
     else
@@ -1025,11 +1025,9 @@ Solver::printLowerEstimate(
 {
     if( multi )
     {
-        if( initial )
-            cout << "c";
-        else
-            cout << "a";
-        for( unsigned int i = 0; i < lowerEstimate.size(); i++ )
+        static unsigned i = 0;
+        cout << "c";
+        for( ; i < lowerEstimate.size(); i++ )
             cout << " " << lowerEstimate[ i ]->getId();
         cout << endl;
     }
@@ -1049,10 +1047,7 @@ Solver::printUpperEstimate(
 {
     if( multi )
     {
-        if( initial )
-            cout << "p";
-        else
-            cout << "r";
+        cout << "p";
         for( unsigned int i = 0; i < preferredChoices.size(); i++ )
             cout << " " << preferredChoices[ i ]->getId();
         cout << endl;
@@ -1073,10 +1068,7 @@ Solver::printUpperEstimateClauseFromModel(
 {
     if( multi )
     {
-        if( initial )
-            cout << "p";
-        else
-            cout << "r";
+        cout << "p";
         for( unsigned int i = 0; i < clauseFromModel->size(); i++ )
             cout << " " << clauseFromModel->getAt( i ).getVariable()->getId();
         cout << endl;

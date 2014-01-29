@@ -765,8 +765,16 @@ Solver::checkForNewMessages()
                     if( var->isFalse() )
                         return false;
                     
-                    if( buff[ 0 ] != 'u' )
-                        lowerEstimate.push_back( var );
+                    if( lowerEstimate.size() >= 2 ) {
+                        if(lowerEstimate.back()->getId() == lowerEstimate[lowerEstimate.size()-2]->getId())
+                            cerr << "OOOOOPPPPSSSS " << lowerEstimate.back()->getId() << " " << lowerEstimate[lowerEstimate.size()- 2]->getId() << endl;
+                        
+                    }
+                    
+//                    if( buff[ 0 ] != 'u' ) {
+//                        if( !firstChoiceFromQuery )
+//                            lowerEstimate.push_back( var );
+//                    }
 
                     assignLiteral( Literal( var, POSITIVE ) );
                     while( hasNextVariableToPropagate() )
