@@ -816,34 +816,34 @@ Solver::checkForNewMessages()
                 assert( 0 );
                 exit( 0 );
                 
-                Literal lit( var, NEGATIVE );
-                if( clauseFromModel != NULL )
-                {
-                    clauseFromModel->detachClause();
-                    for( unsigned i = 0; i < clauseFromModel->size(); i++ )
-                    {
-                        if( clauseFromModel->getAt( i ) == lit )
-                        {
-                            clauseFromModel->swapLiteralsNoWatches( i, clauseFromModel->size() - 1 );
-                            clauseFromModel->removeLastLiteralNoWatches();
-                            break;
-                        }
-                    }
-                    clauseFromModel->attachClause();
-                }
-                else
-                {
-                    for( unsigned int k = 0; k < preferredChoices.size(); k++ )
-                    {
-                        if( preferredChoices[ k ] == var )
-                        {
-                            preferredChoices[ k ] = preferredChoices.back();
-                            preferredChoices.pop_back();
-                            break;
-                        }                        
-                    }                                        
-                }
-                break;
+//                Literal lit( var, NEGATIVE );
+//                if( clauseFromModel != NULL )
+//                {
+//                    clauseFromModel->detachClause();
+//                    for( unsigned i = 0; i < clauseFromModel->size(); i++ )
+//                    {
+//                        if( clauseFromModel->getAt( i ) == lit )
+//                        {
+//                            clauseFromModel->swapLiteralsNoWatches( i, clauseFromModel->size() - 1 );
+//                            clauseFromModel->removeLastLiteralNoWatches();
+//                            break;
+//                        }
+//                    }
+//                    clauseFromModel->attachClause();
+//                }
+//                else
+//                {
+//                    for( unsigned int k = 0; k < preferredChoices.size(); k++ )
+//                    {
+//                        if( preferredChoices[ k ] == var )
+//                        {
+//                            preferredChoices[ k ] = preferredChoices.back();
+//                            preferredChoices.pop_back();
+//                            break;
+//                        }                        
+//                    }                                        
+//                }
+//                break;
             }
             
             case 'b':
@@ -894,10 +894,13 @@ Solver::checkForNewMessages()
 void
 Solver::printNames() const
 {
+    cerr << "CHECK ME" << endl;
+    assert( 0 );
+    exit( 23321 );
     cout << "n";
     for( unsigned int i = 0 ; i < lowerEstimate.size(); i++ )
         cout << " " << lowerEstimate[ i ]->getId();
-    for( unsigned int i = 0; i < preferredChoices.size(); i++ )
-        cout << " " << *preferredChoices[ i ];
-    cout << endl;
+//    for( unsigned int i = 0; i < preferredChoices.size(); i++ )
+//        cout << " " << *preferredChoices[ i ];
+//    cout << endl;
 }
