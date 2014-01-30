@@ -203,13 +203,13 @@ class Solver
         inline void printLearnedClauseForMultiSolver( Clause* clause, bool unary ) const;
         inline void printLiteralForMultiSolver( Literal lit ) const;
         
-        inline void shrinkUpperEstimate();
-        
+        inline void shrinkUpperEstimate();        
         inline unsigned int removeDeterministicConsequencesFromUpperEstimate();
         
         inline unsigned int upperEstimateSize() { return clauseFromModel->size(); }
         inline void createClauseFromModel() { assert( clauseFromModel == NULL ); clauseFromModel = newClause(); clauseFromModel->canBeSimplified = false; }
         inline void addInClauseFromModel( Variable* var ) { assert( clauseFromModel != NULL ); var->setCautiousConsequenceCandidate( true ); clauseFromModel->addLiteral( Literal( var, NEGATIVE ) ); }
+        void printNames() const;
         
     private:
         inline Variable* addVariableInternal();
