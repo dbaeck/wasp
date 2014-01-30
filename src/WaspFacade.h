@@ -92,7 +92,8 @@ WaspFacade::setPrintProgram(
 
 void
 WaspFacade::computeLowerUpperEstimate()
-{    
+{
+    solver.createClauseFromModel();        
     for( unsigned int i = 1; i <= solver.numberOfVariables(); i++ )
     {
         Variable* var = solver.getVariable( i );
@@ -105,7 +106,7 @@ WaspFacade::computeLowerUpperEstimate()
                 solver.addVariableInLowerEstimate( var );
             }
             else if( var->isUndefined() )
-                solver.addPreferredChoice( var );
+                solver.addInClauseFromModel( var );
         }
     }
 }

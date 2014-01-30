@@ -348,7 +348,7 @@ Options::parse(
                 if( optarg )
                 {
                     query = atoi( optarg );
-                    if( query > HYBRIDQUERY )
+                    if( query > ITERATIVEQUERY )
                         ErrorMessage::errorGeneric( "Incorrect value for option --query." );
                 }
                 break;

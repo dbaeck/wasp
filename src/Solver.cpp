@@ -244,75 +244,75 @@ Solver::addClauseFromModelAndBackjump()
 //    return addClauseFromModel( clause );
 }
 
-Clause*
-Solver::computeClauseFromModel()
-{
-    assert( variables.numberOfAssignedLiterals() > 0 );   
-    
-    unsigned int maxLevel = 0;
-    unsigned int maxPosition = 0;
-    unsigned int secondMaxLevel = 0;
-    unsigned int secondMaxPosition = 0;
-    
-    Clause* clause = newClause();
-    uint64_t initialSize = lowerEstimate.size();
-    for( unsigned int i = 0; i < preferredChoices.size(); )
-    {
-        Variable* v = preferredChoices[ i ];
-        assert( !v->isUndefined() );
-        
-        unsigned int dl = v->getDecisionLevel();        
-        if( v->isTrue() && !VariableNames::isHidden( v ) )
-        {
-            if( dl != 0 )
-            {
-                if( dl > maxLevel )
-                {
-                    secondMaxLevel = maxLevel;
-                    secondMaxPosition = maxPosition;
-                    maxLevel = dl;
-                    maxPosition = clause->size();
-                }
-                else if( dl > secondMaxLevel )
-                {
-                    secondMaxLevel = dl;
-                    secondMaxPosition = clause->size();
-                }
-
-                clause->addLiteral( Literal( v, NEGATIVE ) );
-            }
-            else
-            {
-                assert( dl == 0 );
-                addVariableInLowerEstimate( v );
-                
-                preferredChoices[ i ] = preferredChoices.back();
-                preferredChoices.pop_back();
-                continue;
-            }
-        }
-        
-        i++;
-    }
-    
-    if( initialSize < lowerEstimate.size() )
-        printLowerEstimate();
-    
-    if( clause->size() > 1 )
-    {    
-        assert( maxLevel > 0 );
-        assert( secondMaxLevel > 0 );
-
-        clause->swapLiteralsNoWatches( 0, maxPosition );
-        clause->swapLiteralsNoWatches( 1, secondMaxPosition != 0 ? secondMaxPosition : maxPosition );
-        statistics( onAddingClause( clause->size() ) );
-        clause->attachClause();
-        clause->setPositionInSolver( clauses.size() );
-        clauses.push_back( clause );
-    }
-    
-    return clause;
-}
+//Clause*
+//Solver::computeClauseFromModel()
+//{
+//    assert( variables.numberOfAssignedLiterals() > 0 );   
+//    
+//    unsigned int maxLevel = 0;
+//    unsigned int maxPosition = 0;
+//    unsigned int secondMaxLevel = 0;
+//    unsigned int secondMaxPosition = 0;
+//    
+//    Clause* clause = newClause();
+//    uint64_t initialSize = lowerEstimate.size();
+//    for( unsigned int i = 0; i < preferredChoices.size(); )
+//    {
+//        Variable* v = preferredChoices[ i ];
+//        assert( !v->isUndefined() );
+//        
+//        unsigned int dl = v->getDecisionLevel();        
+//        if( v->isTrue() && !VariableNames::isHidden( v ) )
+//        {
+//            if( dl != 0 )
+//            {
+//                if( dl > maxLevel )
+//                {
+//                    secondMaxLevel = maxLevel;
+//                    secondMaxPosition = maxPosition;
+//                    maxLevel = dl;
+//                    maxPosition = clause->size();
+//                }
+//                else if( dl > secondMaxLevel )
+//                {
+//                    secondMaxLevel = dl;
+//                    secondMaxPosition = clause->size();
+//                }
+//
+//                clause->addLiteral( Literal( v, NEGATIVE ) );
+//            }
+//            else
+//            {
+//                assert( dl == 0 );
+//                addVariableInLowerEstimate( v );
+//                
+//                preferredChoices[ i ] = preferredChoices.back();
+//                preferredChoices.pop_back();
+//                continue;
+//            }
+//        }
+//        
+//        i++;
+//    }
+//    
+//    if( initialSize < lowerEstimate.size() )
+//        printLowerEstimate();
+//    
+//    if( clause->size() > 1 )
+//    {    
+//        assert( maxLevel > 0 );
+//        assert( secondMaxLevel > 0 );
+//
+//        clause->swapLiteralsNoWatches( 0, maxPosition );
+//        clause->swapLiteralsNoWatches( 1, secondMaxPosition != 0 ? secondMaxPosition : maxPosition );
+//        statistics( onAddingClause( clause->size() ) );
+//        clause->attachClause();
+//        clause->setPositionInSolver( clauses.size() );
+//        clauses.push_back( clause );
+//    }
+//    
+//    return clause;
+//}
 
 bool 
 Solver::solve()
@@ -787,6 +787,10 @@ Solver::checkForNewMessages()
             {
                 Variable* var = getVariable( atoi( buff + 2 ) );
                 //cerr << "R " << var->getId() << endl;
+                cerr << "CHECK ME! Maybe we should check if the size of clauseFromModel can be 0 or 1 after this removal" << endl;
+                assert( 0 );
+                exit( 0 );
+                
                 Literal lit( var, NEGATIVE );
                 if( clauseFromModel != NULL )
                 {

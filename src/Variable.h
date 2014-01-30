@@ -145,6 +145,12 @@ class Variable
         inline bool hasBeenEliminated() const { return signOfEliminatedVariable != MAXUNSIGNEDINT; }
         inline unsigned int cost() const { return numberOfOccurrences( POSITIVE ) * numberOfOccurrences( NEGATIVE ); }
         
+        inline bool isCautiousConsequenceCandidate() const { return cautiousConsequenceCandidate; }
+        inline void setCautiousConsequenceCandidate( bool value ) { cautiousConsequenceCandidate = value; }
+        
+        inline bool isCautiousConsequence() const { return cautiousConsequence; }
+        inline void setCautiousConsequence( bool value ) { cautiousConsequence = value; }
+               
     private:
 
         inline Variable( const Variable& );
@@ -199,6 +205,9 @@ class Variable
         
         Clause* definition;
         unsigned int signOfEliminatedVariable;
+        
+        bool cautiousConsequenceCandidate;
+        bool cautiousConsequence;
 };
 
 bool Comparator::operator()( const Variable* v1, const Variable* v2 ) const{ return v1->activity() > v2->activity(); }
@@ -214,7 +223,9 @@ Variable::Variable(
     inHeap( false ),
     visitedInLearning( 0 ),
     definition( NULL ),
-    signOfEliminatedVariable( MAXUNSIGNEDINT )
+    signOfEliminatedVariable( MAXUNSIGNEDINT ),
+    cautiousConsequenceCandidate( false ),
+    cautiousConsequence( false )
 {
     signature = ( ( uint64_t ) 1 ) << ( ( id - 1 ) & 63 );
 }

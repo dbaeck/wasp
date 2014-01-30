@@ -77,6 +77,7 @@
 #define CLASPQUERYRESTART 3
 #define WASPQUERYFIRSTMODEL 4
 #define HYBRIDQUERY 5
+#define ITERATIVEQUERY 6
 
 /* 
  * Error messages

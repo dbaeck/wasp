@@ -76,6 +76,10 @@ WaspFacade::solve()
             solveQueryHybridApproach();
             return;
             
+        case ITERATIVEQUERY:
+            solveQueryWaspApproach();
+            return;
+            
         default:
             assert( queryType == NOQUERY );
     }
@@ -122,10 +126,12 @@ WaspFacade::solveQueryClaspApproach()
     unsigned int diff = 0;
     if( solver.preprocessing() )
     {
-        computeLowerUpperEstimate();
-        
+        computeLowerUpperEstimate();        
         printInitialState();
-
+        
+        if( solver.clauseFromModel->size() > 0 )
+            solver.clauseFromModel->attachClause();
+        
         while( solver.solve() )
         {
             ++numberOfModels;            
@@ -146,10 +152,21 @@ WaspFacade::solveQueryClaspApproach()
 //        cerr << "Avg of cut Models: " << diff / numberOfModels << endl;
 //        cerr << "Answers not in well founded: " << ( solver.getLowerEstimate().size() + solver.clauseFromModel->size() ) - lowerEstimateInitialSize << endl;
 //        cerr << "Enumerated Models: " << numberOfModels << endl;
-
-        solver.printUpperEstimateClauseFromModel();
-        for( unsigned int i = 0; i < solver.clauseFromModel->size(); i++ )
-            solver.addVariableInLowerEstimate( solver.clauseFromModel->getAt( i ).getVariable() );
+        
+        if( solver.clauseFromModel->size() > 1 )
+            solver.clauseFromModel->detachClause();
+        for( unsigned int i = 0; i < solver.clauseFromModel->size(); )
+        {
+            Variable* var = solver.clauseFromModel->getAt( i ).getVariable();
+            if( var->isCautiousConsequence() )
+                var->setCautiousConsequenceCandidate( false );
+            else
+                solver.addVariableInLowerEstimate( var );
+            
+            solver.clauseFromModel->swapLiteralsNoWatches( i, solver.clauseFromModel->size() - 1 );
+            solver.clauseFromModel->removeLastLiteralNoWatches();            
+        }
+        solver.printUpperEstimate();
         solver.printLowerEstimate();
     }
 }
@@ -163,20 +180,20 @@ WaspFacade::solveQueryWaspApproach()
     if( solver.preprocessing() )
     {
         computeLowerUpperEstimate();
-        uint64_t upperEstimateSize = solver.numberOfPreferredChoices();
+        uint64_t upperEstimateSize = solver.upperEstimateSize();
         uint64_t diff = 0;
         
         printInitialState();
         
-        if( solver.waspFirstModelApproachForQuery() )
-        {
+        if( solver.waspFirstModelApproachForQuery() || solver.iterativeApproachForQuery() )
+        {            
             if( solver.solve() )
             {
                 solver.setFirstChoiceFromQuery( true );
                 ++numberOfModels;
                 solver.shrinkUpperEstimate();
-                diff = diff + ( upperEstimateSize - solver.numberOfPreferredChoices() );
-                upperEstimateSize = solver.numberOfPreferredChoices();
+                diff = diff + ( upperEstimateSize - solver.upperEstimateSize() );
+                upperEstimateSize = solver.upperEstimateSize();
                 solver.printUpperEstimate();
                 solver.doRestart();
                 solver.simplifyOnRestart();
@@ -187,17 +204,20 @@ WaspFacade::solveQueryWaspApproach()
         }        
 
         solver.setFirstChoiceFromQuery( true );
-        while( solver.numberOfPreferredChoices() != 0 )
+        if( solver.iterativeApproachForQuery() )
+            solver.setShuffleAtEachRestart( false );
+        
+        while( solver.upperEstimateSize() != 0 )
         {
             if( solver.solve() )
             {
                 ++numberOfModels;
                 solver.shrinkUpperEstimate();
-                diff = diff + ( upperEstimateSize - solver.numberOfPreferredChoices() );
-                upperEstimateSize = solver.numberOfPreferredChoices();
+                diff = diff + ( upperEstimateSize - solver.upperEstimateSize() );
+                upperEstimateSize = solver.upperEstimateSize();
                 solver.printUpperEstimate();
 
-                if( solver.numberOfPreferredChoices() == 0 )
+                if( solver.upperEstimateSize() == 0 )
                     break;
 
                 solver.doRestart();
@@ -456,83 +476,74 @@ WaspFacade::setRestartsPolicy(
 bool
 WaspFacade::claspApproachForQuery(
     unsigned int& diff )
-{   
-    if( solver.clauseFromModel == NULL )
-    {
-        solver.clauseFromModel = solver.computeClauseFromModel();
-        solver.clauseFromModel->canBeSimplified = false;
-    }
-    else
-    {
-        unsigned int maxLevel = 0;
-        unsigned int maxPosition = 0;
-        unsigned int secondMaxLevel = 0;
-        unsigned int secondMaxPosition = 0;
+{       
+    unsigned int maxLevel = 0;
+    unsigned int maxPosition = 0;
+    unsigned int secondMaxLevel = 0;
+    unsigned int secondMaxPosition = 0;
 
-        unsigned int initialClauseFromModelSize = solver.clauseFromModel->size();
-        if( solver.clauseFromModel->size() > 1 )
-            solver.clauseFromModel->detachClause();
+    unsigned int initialClauseFromModelSize = solver.upperEstimateSize();
+    if( initialClauseFromModelSize > 1 )
+        solver.clauseFromModel->detachClause();
 
-        unsigned int size = solver.getLowerEstimate().size();
-        for( unsigned int i = 0; i < solver.clauseFromModel->size(); )
+    unsigned int size = solver.getLowerEstimate().size();
+    for( unsigned int i = 0; i < solver.clauseFromModel->size(); )
+    {
+        Variable* var = solver.clauseFromModel->getAt( i ).getVariable();
+        unsigned int dl = var->getDecisionLevel();            
+
+        if( !var->isTrue() )
         {
-            Variable* var = solver.clauseFromModel->getAt( i ).getVariable();
-            unsigned int dl = var->getDecisionLevel();            
-            
-            if( !var->isTrue() )
-            {
-                solver.clauseFromModel->swapLiteralsNoWatches( i, solver.clauseFromModel->size() - 1 );
-                solver.clauseFromModel->removeLastLiteralNoWatches();
-            }
-            else if( dl == 0 )
-            {
-                solver.clauseFromModel->swapLiteralsNoWatches( i, solver.clauseFromModel->size() - 1 );
-                solver.clauseFromModel->removeLastLiteralNoWatches();
-                solver.addVariableInLowerEstimate( var );
-            }
-            else
-            {
-                if( dl > maxLevel )
-                {
-                    secondMaxLevel = maxLevel;
-                    secondMaxPosition = maxPosition;
-                    maxLevel = dl;
-                    maxPosition = i;
-                }
-                else if( dl > secondMaxLevel )
-                {
-                    secondMaxLevel = dl;
-                    secondMaxPosition = i;
-                }
-                i++;
-            }
+            solver.clauseFromModel->swapLiteralsNoWatches( i, solver.clauseFromModel->size() - 1 );
+            solver.clauseFromModel->removeLastLiteralNoWatches();
+            var->setCautiousConsequenceCandidate( false );
         }
-
-        diff = diff + ( initialClauseFromModelSize - solver.clauseFromModel->size() );
-        if( size < solver.getLowerEstimate().size() )
-            solver.printLowerEstimate();
-
-        if( solver.clauseFromModel->size() > 1 )
+        else if( dl == 0 )
         {
-            assert( maxLevel > 0 );
-            assert( secondMaxLevel > 0 );
-
-            solver.clauseFromModel->swapLiteralsNoWatches( 0, maxPosition );
-            solver.clauseFromModel->swapLiteralsNoWatches( 1, secondMaxPosition != 0 ? secondMaxPosition : maxPosition );
-            statistics( onAddingClause( size ) );
-            solver.clauseFromModel->attachClause();            
+            solver.clauseFromModel->swapLiteralsNoWatches( i, solver.clauseFromModel->size() - 1 );
+            solver.clauseFromModel->removeLastLiteralNoWatches();
+            var->setCautiousConsequenceCandidate( false );
+        }
+        else
+        {
+            if( dl > maxLevel )
+            {
+                secondMaxLevel = maxLevel;
+                secondMaxPosition = maxPosition;
+                maxLevel = dl;
+                maxPosition = i;
+            }
+            else if( dl > secondMaxLevel )
+            {
+                secondMaxLevel = dl;
+                secondMaxPosition = i;
+            }
+            i++;
         }
     }
 
+    diff = diff + ( initialClauseFromModelSize - solver.upperEstimateSize() );
+    if( size < solver.getLowerEstimate().size() )
+        solver.printLowerEstimate();
+
+    if( solver.upperEstimateSize() > 1 )
+    {
+        assert( maxLevel > 0 );
+        assert( secondMaxLevel > 0 );
+
+        solver.clauseFromModel->swapLiteralsNoWatches( 0, maxPosition );
+        solver.clauseFromModel->swapLiteralsNoWatches( 1, secondMaxPosition != 0 ? secondMaxPosition : maxPosition );
+        statistics( onAddingClause( size ) );
+        solver.clauseFromModel->attachClause();            
+    }
     assert( solver.clauseFromModel != NULL );
-    
-    solver.printUpperEstimateClauseFromModel();
 
-    if( solver.clauseFromModel->size() == 0 )
+    solver.printUpperEstimate();
+
+    if( solver.upperEstimateSize() == 0 )
         return false;
 
-    unsigned int size = solver.clauseFromModel->size();
-    if( size > 1 )
+    if( solver.upperEstimateSize() > 1 )
     {
         unsigned int unrollLevel = solver.clauseFromModel->getAt( 1 ).getDecisionLevel();
         if( solver.clauseFromModel->getAt( 0 ).getDecisionLevel() == unrollLevel )
@@ -544,17 +555,24 @@ WaspFacade::claspApproachForQuery(
         solver.unroll( unrollLevel );
         if( !solver.clauseFromModel->getAt( 1 ).isUndefined() )
         {
-            assert( solver.clauseFromModel->getAt( 0 ).isUndefined() );
-            solver.assignLiteral( solver.clauseFromModel );
+            Literal lit = solver.clauseFromModel->getAt( 0 );
+            assert( lit.isUndefined() );
+            if( unrollLevel == 0  )
+            {
+                if( !solver.propagateLiteralOnRestart( lit ) )
+                    return false;
+            }
+            else
+                solver.assignLiteral( solver.clauseFromModel );
         }
     }
     else
     {
-        assert( size == 1 );
+        assert( solver.upperEstimateSize() == 1 );
         solver.doRestart();
         solver.simplifyOnRestart();
-        solver.assignLiteral( solver.clauseFromModel->getAt( 0 ) );                        
-        solver.clearConflictStatus();        
+        if( !solver.propagateLiteralOnRestart( solver.clauseFromModel->getAt( 0 ) ) )
+            return false;
     }
     return true;
 }

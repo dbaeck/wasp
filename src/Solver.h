@@ -71,7 +71,7 @@ class Solver
         inline void addLearnedClause( Clause* learnedClause );
         bool addClauseFromModelAndBackjump();
 //        bool addClauseFromModelAndRestart();
-        Clause* computeClauseFromModel();
+//        Clause* computeClauseFromModel();
         
         inline Literal getLiteral( int lit );
         inline Variable* getVariable( unsigned int var );
@@ -177,10 +177,10 @@ class Solver
         
         inline void setQuery( unsigned int q ) { this->query = q; }
         
-        inline void addPreferredChoice( Variable* var ) { preferredChoices.push_back( var ); }
-        inline unsigned int numberOfPreferredChoices() const { return preferredChoices.size(); }
+//        inline void addPreferredChoice( Variable* var ) { var->setCautiousConsequenceCandidate( true ); preferredChoices.push_back( var ); }
+//        inline unsigned int numberOfPreferredChoices() const { return preferredChoices.size(); }
         
-        inline void addVariableInLowerEstimate( Variable* var ) { lowerEstimate.push_back( var ); }
+        inline void addVariableInLowerEstimate( Variable* var ) { var->setCautiousConsequence( true ); lowerEstimate.push_back( var ); }
         inline const vector< Variable* >& getLowerEstimate() const { return lowerEstimate; }
         
         inline unsigned int getQueryType() const { return query; }
@@ -189,20 +189,27 @@ class Solver
         inline bool waspApproachForQuery() const { return query == WASPQUERY; }
         inline bool waspFirstModelApproachForQuery() const { return query == WASPQUERYFIRSTMODEL; }
         inline bool hybridApproachForQuery() const { return query == HYBRIDQUERY; }
+        inline bool iterativeApproachForQuery() const { return query == ITERATIVEQUERY; }
         
         inline void printLowerEstimate() const;
         inline void printUpperEstimate() const;
-        inline void printUpperEstimateClauseFromModel() const;
         
         inline void setFirstChoiceFromQuery( bool value ){ firstChoiceFromQuery = value; }
+        inline void setShuffleAtEachRestart( bool value ){ shuffleAtEachRestart = value; }
         inline bool propagateLiteralOnRestart( Literal literal );
         
         inline void setMultiSolver( bool m ){ multi = m; }
-        inline bool hasMultiSolver() const{ return multi; }
+        inline bool hasMultiSolver() const{ return multi; }                
         inline void printLearnedClauseForMultiSolver( Clause* clause, bool unary ) const;
         inline void printLiteralForMultiSolver( Literal lit ) const;
         
         inline void shrinkUpperEstimate();
+        
+        inline unsigned int removeDeterministicConsequencesFromUpperEstimate();
+        
+        inline unsigned int upperEstimateSize() { return clauseFromModel->size(); }
+        inline void createClauseFromModel() { assert( clauseFromModel == NULL ); clauseFromModel = newClause(); clauseFromModel->canBeSimplified = false; }
+        inline void addInClauseFromModel( Variable* var ) { assert( clauseFromModel != NULL ); var->setCautiousConsequenceCandidate( true ); clauseFromModel->addLiteral( Literal( var, NEGATIVE ) ); }
         
     private:
         inline Variable* addVariableInternal();
@@ -247,11 +254,12 @@ class Solver
         vector< Variable* > eliminatedVariables;
         vector< Clause* > poolOfClauses;
         
-        vector< Variable* > preferredChoices;
+        //vector< Variable* > preferredChoices;
         vector< Variable* > lowerEstimate;
 
         bool firstChoiceFromQuery;
         bool multi;
+        bool shuffleAtEachRestart;
                 
         struct DeletionCounters
         {
@@ -296,7 +304,8 @@ Solver::Solver()
     literalsInClauses( 0 ),
     literalsInLearnedClauses( 0 ),
     query( NOQUERY ),
-    firstChoiceFromQuery( false )
+    firstChoiceFromQuery( false ),
+    shuffleAtEachRestart( true )
 {
     satelite = new Satelite( *this );
     deletionCounters.init();
@@ -610,59 +619,57 @@ Solver::chooseLiteral()
     if( currentDecisionLevel == 0 && multi )
         if( !checkForNewMessages() )
             return false;
-    
+
     if( currentDecisionLevel == 0 && firstChoiceFromQuery )
     {
-        assert( !preferredChoices.empty() );        
-
-        static int contatore = 0;
-        if( hybridApproachForQuery() && ++contatore % 32 != 0 )
+        assert( clauseFromModel->size() != 0 );
+        if( shuffleAtEachRestart )
         {
-            goto normalChoice;
-        }
-        unsigned int oldSize = lowerEstimate.size();
-        Activity maxAct = 0;
-        unsigned int maxIndex = 0;
-
-        for( unsigned int i = 0; i < preferredChoices.size(); )
-        {
-            Variable* var = preferredChoices[ i ];
-            if( !var->isUndefined() )
+            static unsigned int counter = 0;
+            if( hybridApproachForQuery() && ++counter % 32 != 0 )
             {
-                assert( var->getDecisionLevel() == 0 );                    
-                if( var->isTrue() && !hybridApproachForQuery() )                                    
-                    addVariableInLowerEstimate( var );
-
-                preferredChoices[ i ] = preferredChoices.back();
-                preferredChoices.pop_back();
+                goto normalChoice;
             }
-            else
+            unsigned int oldSize = lowerEstimate.size();
+            unsigned int maxIndex = removeDeterministicConsequencesFromUpperEstimate();
+            
+            if( oldSize != lowerEstimate.size() )
+                printLowerEstimate();
+
+            if(  clauseFromModel->size() == 0 )
             {
-                if( preferredChoices[ i ]->activity() > maxAct )
-                {
-                    maxAct = preferredChoices[ i ]->activity();
-                    maxIndex = i;
-                }
-                ++i;
+                if( hybridApproachForQuery() )
+                    goto normalChoice; 
+                else
+                    return false;
+            }
+
+            clauseFromModel->swapLiteralsNoWatches( maxIndex, 0 );
+//            Variable* tmp = preferredChoices[ maxIndex ];
+//            preferredChoices[ maxIndex ] = preferredChoices[ 0 ];
+//            preferredChoices[ 0 ] = tmp;
+            
+        }
+        else
+        {
+            static unsigned int initialSize = clauseFromModel->size();
+            if( !clauseFromModel->getAt( 0 ).isUndefined() || initialSize != clauseFromModel->size() )
+            {
+                unsigned int oldSize = lowerEstimate.size();
+                unsigned int maxIndex = removeDeterministicConsequencesFromUpperEstimate();
+
+                if( oldSize != lowerEstimate.size() )
+                    printLowerEstimate();
+
+                if( clauseFromModel->size() == 0 )
+                    return false;
+
+                clauseFromModel->swapLiteralsNoWatches( 0, maxIndex );                
+                initialSize = clauseFromModel->size();
             }
         }
-
         
-        if( oldSize != lowerEstimate.size() )
-            printLowerEstimate();
-        
-        if( preferredChoices.empty() )
-        {
-            if( hybridApproachForQuery() )
-               goto normalChoice; 
-            else
-                return false;
-        }
-
-        Variable* tmp = preferredChoices[ maxIndex ];
-        preferredChoices[ maxIndex ] = preferredChoices[ 0 ];
-        preferredChoices[ 0 ] = tmp;
-        choice = minisatHeuristic.makeAChoice( preferredChoices );
+        choice = clauseFromModel->getAt( 0 );//minisatHeuristic.makeAChoice( preferredChoices );
     }
     else
     {
@@ -689,20 +696,23 @@ Solver::analyzeConflict()
             printLearnedClauseForMultiSolver( learnedClause, true );
 
         doRestart();
-        assignLiteral( learnedClause->getAt( 0 ) );        
-//        delete learnedClause;
+        
+        Literal lit = learnedClause->getAt( 0 );        
         releaseClause( learnedClause );
 
         clearConflictStatus();
-        while( hasNextVariableToPropagate() )
-        {
-            nextValueOfPropagation--;            
-            Variable* variableToPropagate = getNextVariableToPropagate();
-            propagate( variableToPropagate );
-
-            if( conflictDetected() )
-                return false;
-        }
+        
+        if( !propagateLiteralOnRestart( lit ) )
+            return false;
+//        while( hasNextVariableToPropagate() )
+//        {
+//            nextValueOfPropagation--;            
+//            Variable* variableToPropagate = getNextVariableToPropagate();
+//            propagate( variableToPropagate );
+//
+//            if( conflictDetected() )
+//                return false;
+//        }
         
         simplifyOnRestart();                
     }
@@ -1050,26 +1060,6 @@ Solver::printUpperEstimate() const
     if( multi )
     {
         cout << "p";
-        for( unsigned int i = 0; i < preferredChoices.size(); i++ )
-            cout << " " << preferredChoices[ i ]->getId();
-        cout << endl;
-    }
-    else
-    {
-        printTime( cout );
-        cout << "Possible answers (" << ( preferredChoices.size() + lowerEstimate.size() ) << "; " << preferredChoices.size() << "):" << endl;
-        for( unsigned int i = 0; i < preferredChoices.size(); i++ )
-            cout << *preferredChoices[ i ] << " ";
-        cout << endl;    
-    }
-}
-
-void
-Solver::printUpperEstimateClauseFromModel() const
-{
-    if( multi )
-    {
-        cout << "p";
         for( unsigned int i = 0; i < clauseFromModel->size(); i++ )
             cout << " " << clauseFromModel->getAt( i ).getVariable()->getId();
         cout << endl;
@@ -1077,11 +1067,10 @@ Solver::printUpperEstimateClauseFromModel() const
     else
     {
         printTime( cout );
-        cout << "Possible answers (" << ( clauseFromModel->size() + getLowerEstimate().size() ) << "; " << 0 << "):" << endl;
+        cout << "Possible answers (" << ( clauseFromModel->size() + lowerEstimate.size() ) << "; " << clauseFromModel->size() << "):" << endl;
         for( unsigned int i = 0; i < clauseFromModel->size(); i++ )
             cout << " " << *( clauseFromModel->getAt( i ).getVariable() );
-        
-        cout << endl;
+        cout << endl;    
     }
 }
 
@@ -1090,17 +1079,25 @@ Solver::propagateLiteralOnRestart(
     Literal literal )
 {
     assignLiteral( literal );
+    
+    unsigned int initialLowerEstimateSize = lowerEstimate.size();
     while( hasNextVariableToPropagate() )
     {
         nextValueOfPropagation--;            
         Variable* variableToPropagate = getNextVariableToPropagate();
+        
+        if( variableToPropagate->isTrue() && variableToPropagate->isCautiousConsequenceCandidate() )
+            addVariableInLowerEstimate( variableToPropagate );
+
         propagate( variableToPropagate );
 
         if( conflictDetected() )
             return false;
     }
-
-    simplifyOnRestart();
+   
+    if( lowerEstimate.size() > initialLowerEstimateSize )
+        printLowerEstimate();
+    simplifyOnRestart();    
     
     return true;
 }
@@ -1137,18 +1134,52 @@ Solver::printLearnedClauseForMultiSolver(
 void
 Solver::shrinkUpperEstimate()
 {
-    for( unsigned int i = 0; i < preferredChoices.size(); )
+    for( unsigned int i = 0; i < clauseFromModel->size(); )
     {
-        Variable* var = preferredChoices[ i ];
+        Variable* var = clauseFromModel->getAt( i ).getVariable();
         assert( !var->isUndefined() );
         if( !var->isTrue() )
         {
-            preferredChoices[ i ] = preferredChoices.back();
-            preferredChoices.pop_back();
+            var->setCautiousConsequenceCandidate( false );
+            clauseFromModel->swapLiteralsNoWatches( i, clauseFromModel->size() - 1 );
+            clauseFromModel->removeLastLiteralNoWatches();
         }
         else
             ++i;
     }
+}
+
+unsigned int
+Solver::removeDeterministicConsequencesFromUpperEstimate()
+{
+    Activity maxAct = 0;
+    unsigned int maxIndex = 0;
+
+    for( unsigned int i = 0; i < clauseFromModel->size(); )
+    {
+        Variable* var = clauseFromModel->getAt( i ).getVariable();
+        if( !var->isUndefined() )
+        {
+            assert( var->getDecisionLevel() == 0 );                    
+//            if( var->isTrue() && !hybridApproachForQuery() )                                    
+//                addVariableInLowerEstimate( var );
+
+            var->setCautiousConsequenceCandidate( false );
+            clauseFromModel->swapLiteralsNoWatches( i, clauseFromModel->size() - 1 );
+            clauseFromModel->removeLastLiteralNoWatches();
+        }
+        else
+        {
+            if( clauseFromModel->getAt( i ).getVariable()->activity() > maxAct )
+            {
+                maxAct = clauseFromModel->getAt( i ).getVariable()->activity();
+                maxIndex = i;
+            }
+            ++i;
+        }
+    }
+    
+    return maxIndex;
 }
 
 #endif	/* SOLVER_H */
