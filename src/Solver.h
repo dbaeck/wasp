@@ -180,7 +180,6 @@ class Solver
 //        inline void addPreferredChoice( Variable* var ) { var->setCautiousConsequenceCandidate( true ); preferredChoices.push_back( var ); }
 //        inline unsigned int numberOfPreferredChoices() const { return preferredChoices.size(); }
         
-        inline void addVariableInLowerEstimate( Variable* var ) { var->setCautiousConsequence( true ); lowerEstimate.push_back( var ); }
         inline const vector< Variable* >& getLowerEstimate() const { return lowerEstimate; }
         
         inline unsigned int getQueryType() const { return query; }
@@ -199,7 +198,7 @@ class Solver
         inline bool propagateLiteralOnRestart( Literal literal );
         
         inline void setMultiSolver( bool m ){ multi = m; }
-        inline bool hasMultiSolver() const{ return multi; }                
+        inline bool isMultiSolver() const{ return multi; }                
         inline void printLearnedClauseForMultiSolver( Clause* clause, bool unary ) const;
         inline void printLiteralForMultiSolver( Literal lit ) const;
         
@@ -210,6 +209,10 @@ class Solver
         inline void createClauseFromModel() { assert( clauseFromModel == NULL ); clauseFromModel = newClause(); clauseFromModel->canBeSimplified = false; }
         inline void addInClauseFromModel( Variable* var ) { assert( clauseFromModel != NULL ); var->setCautiousConsequenceCandidate( true ); clauseFromModel->addLiteral( Literal( var, NEGATIVE ) ); }
         void printNames() const;
+        
+        
+        inline void addVariableInLowerEstimate( Variable* variable );
+        inline void onRemovingVariableFromCautiousConsequencesCandidate( Variable* variable );
         
     private:
         inline Variable* addVariableInternal();
@@ -1038,11 +1041,15 @@ Solver::printLowerEstimate() const
 {
     if( multi )
     {
-        static unsigned i = 0;
-        cout << "c";
-        for( ; i < lowerEstimate.size(); i++ )
-            cout << " " << lowerEstimate[ i ]->getId();
-        cout << endl;
+        static bool first = true;
+        if( first )
+        {
+            cout << "c";
+            for( unsigned int i = 0; i < lowerEstimate.size(); i++ )
+                cout << " " << lowerEstimate[ i ]->getId();
+            cout << endl;
+            first = false;
+        }
     }
     else
     {
@@ -1059,10 +1066,15 @@ Solver::printUpperEstimate() const
 {
     if( multi )
     {
-        cout << "p";
-        for( unsigned int i = 0; i < clauseFromModel->size(); i++ )
-            cout << " " << clauseFromModel->getAt( i ).getVariable()->getId();
-        cout << endl;
+        static bool first = true;
+        if( first )
+        {
+            cout << "p";
+            for( unsigned int i = 0; i < clauseFromModel->size(); i++ )
+                cout << " " << clauseFromModel->getAt( i ).getVariable()->getId();
+            cout << endl;
+            first = false;
+        }
     }
     else
     {
@@ -1181,6 +1193,24 @@ Solver::removeDeterministicConsequencesFromUpperEstimate()
     
     return maxIndex;
 }
+
+void
+Solver::onRemovingVariableFromCautiousConsequencesCandidate(
+    Variable* var )
+{
+    var->setCautiousConsequenceCandidate( false );
+}
+
+void
+Solver::addVariableInLowerEstimate(
+    Variable* var )
+{
+    if( var->isCautiousConsequenceCandidate() )
+        cout << "c " << var->getId() << endl;
+    var->setCautiousConsequence( true );
+    lowerEstimate.push_back( var );
+}
+        
 
 #endif	/* SOLVER_H */
 

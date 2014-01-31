@@ -486,6 +486,7 @@ WaspFacade::claspApproachForQuery(
     if( initialClauseFromModelSize > 1 )
         solver.clauseFromModel->detachClause();
 
+    vector< Variable* > removedVariables;
     unsigned int size = solver.getLowerEstimate().size();
     for( unsigned int i = 0; i < solver.clauseFromModel->size(); )
     {
@@ -495,14 +496,16 @@ WaspFacade::claspApproachForQuery(
         if( !var->isTrue() )
         {
             solver.clauseFromModel->swapLiteralsNoWatches( i, solver.clauseFromModel->size() - 1 );
-            solver.clauseFromModel->removeLastLiteralNoWatches();
+            solver.clauseFromModel->removeLastLiteralNoWatches();            
             var->setCautiousConsequenceCandidate( false );
+            removedVariables.push_back( var );
         }
         else if( dl == 0 )
         {
             solver.clauseFromModel->swapLiteralsNoWatches( i, solver.clauseFromModel->size() - 1 );
             solver.clauseFromModel->removeLastLiteralNoWatches();
             var->setCautiousConsequenceCandidate( false );
+            removedVariables.push_back( var );
         }
         else
         {
@@ -520,6 +523,14 @@ WaspFacade::claspApproachForQuery(
             }
             i++;
         }
+    }
+    
+    if( solver.isMultiSolver() && removedVariables.size() > 0 )
+    {
+        cout << "p";
+        for( unsigned int i = 0; i < removedVariables.size(); i++ )
+            cout << " " << removedVariables[ i ]->getId();            
+        cout << endl;
     }
 
     diff = diff + ( initialClauseFromModelSize - solver.upperEstimateSize() );

@@ -766,18 +766,8 @@ Solver::checkForNewMessages()
                     if( lit.isFalse() )
                         return false;
 
-                    assignLiteral( lit );
-                    while( hasNextVariableToPropagate() )
-                    {
-                        nextValueOfPropagation--;            
-                        Variable* variableToPropagate = getNextVariableToPropagate();
-                        propagate( variableToPropagate );
-
-                        if( conflictDetected() )
-                            return false;
-                    }
-
-                    simplifyOnRestart();
+                    if( !propagateLiteralOnRestart( lit ) )
+                        return false;
                 }
                 break;
             }
@@ -792,18 +782,8 @@ Solver::checkForNewMessages()
                     if( var->isFalse() )
                         return false;
 
-                    assignLiteral( Literal( var, POSITIVE ) );
-                    while( hasNextVariableToPropagate() )
-                    {
-                        nextValueOfPropagation--;            
-                        Variable* variableToPropagate = getNextVariableToPropagate();
-                        propagate( variableToPropagate );
-
-                        if( conflictDetected() )
-                            return false;
-                    }
-
-                    simplifyOnRestart();
+                    if( !propagateLiteralOnRestart( Literal( var, POSITIVE ) ) )
+                        return false;
                 }
                 break;
             }
@@ -812,38 +792,30 @@ Solver::checkForNewMessages()
             {
                 Variable* var = getVariable( atoi( buff + 2 ) );
                 //cerr << "R " << var->getId() << endl;
-                cerr << "CHECK ME! Maybe we should check if the size of clauseFromModel can be 0 or 1 after this removal" << endl;
-                assert( 0 );
-                exit( 0 );
-                
-//                Literal lit( var, NEGATIVE );
-//                if( clauseFromModel != NULL )
-//                {
-//                    clauseFromModel->detachClause();
-//                    for( unsigned i = 0; i < clauseFromModel->size(); i++ )
-//                    {
-//                        if( clauseFromModel->getAt( i ) == lit )
-//                        {
-//                            clauseFromModel->swapLiteralsNoWatches( i, clauseFromModel->size() - 1 );
-//                            clauseFromModel->removeLastLiteralNoWatches();
-//                            break;
-//                        }
-//                    }
-//                    clauseFromModel->attachClause();
-//                }
-//                else
-//                {
-//                    for( unsigned int k = 0; k < preferredChoices.size(); k++ )
-//                    {
-//                        if( preferredChoices[ k ] == var )
-//                        {
-//                            preferredChoices[ k ] = preferredChoices.back();
-//                            preferredChoices.pop_back();
-//                            break;
-//                        }                        
-//                    }                                        
-//                }
-//                break;
+                var->setCautiousConsequenceCandidate( false );
+                Literal lit( var, NEGATIVE );
+                if( clauseFromModel != NULL )
+                {                    
+                    if( clauseFromModel->size() > 2 && claspApproachForQuery() )
+                       clauseFromModel->detachClause();
+                    for( unsigned i = 0; i < clauseFromModel->size(); i++ )
+                    {
+                        if( clauseFromModel->getAt( i ) == lit )
+                        {                            
+                            clauseFromModel->swapLiteralsNoWatches( i, clauseFromModel->size() - 1 );
+                            clauseFromModel->removeLastLiteralNoWatches();                            
+                            break;
+                        }
+                    }
+                    
+                    if( clauseFromModel->size() == 1 )
+                        if( !propagateLiteralOnRestart( clauseFromModel->getAt( 0 ) ) )
+                            return false;
+
+                    if( clauseFromModel->size() > 2 && claspApproachForQuery() )
+                        clauseFromModel->attachClause();
+                }
+                break;
             }
             
             case 'b':
@@ -894,12 +866,16 @@ Solver::checkForNewMessages()
 void
 Solver::printNames() const
 {
-    cerr << "CHECK ME" << endl;
-    assert( 0 );
-    exit( 23321 );
     cout << "n";
     for( unsigned int i = 0 ; i < lowerEstimate.size(); i++ )
         cout << " " << lowerEstimate[ i ]->getId();
+    for( unsigned int i = 0; i < clauseFromModel->size(); i++ )
+        cout << " " << *( clauseFromModel->getAt( i ).getVariable() );
+    cout << endl;
+    
+//    cout << "n";
+//    for( unsigned int i = 0 ; i < lowerEstimate.size(); i++ )
+//        cout << " " << lowerEstimate[ i ]->getId();
 //    for( unsigned int i = 0; i < preferredChoices.size(); i++ )
 //        cout << " " << *preferredChoices[ i ];
 //    cout << endl;
