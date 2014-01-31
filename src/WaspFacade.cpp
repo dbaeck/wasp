@@ -525,13 +525,7 @@ WaspFacade::claspApproachForQuery(
         }
     }
     
-    if( solver.isMultiSolver() && removedVariables.size() > 0 )
-    {
-        cout << "p";
-        for( unsigned int i = 0; i < removedVariables.size(); i++ )
-            cout << " " << removedVariables[ i ]->getId();            
-        cout << endl;
-    }
+    solver.printRemovedVariables( removedVariables );
 
     diff = diff + ( initialClauseFromModelSize - solver.upperEstimateSize() );
     if( size < solver.getLowerEstimate().size() )

@@ -213,6 +213,7 @@ class Solver
         
         inline void addVariableInLowerEstimate( Variable* variable );
         inline void onRemovingVariableFromCautiousConsequencesCandidate( Variable* variable );
+        inline void printRemovedVariables( vector< Variable* >& removedVariables );
         
     private:
         inline Variable* addVariableInternal();
@@ -1162,13 +1163,7 @@ Solver::shrinkUpperEstimate()
             ++i;
     }
     
-    if( isMultiSolver() && removedVariables.size() > 0 )
-    {
-        cout << "p";
-        for( unsigned int i = 0; i < removedVariables.size(); i++ )
-            cout << " " << removedVariables[ i ]->getId();            
-        cout << endl;
-    }
+    printRemovedVariables( removedVariables );
 }
 
 unsigned int
@@ -1202,15 +1197,8 @@ Solver::removeDeterministicConsequencesFromUpperEstimate()
             ++i;
         }
     }
-    
-    if( isMultiSolver() && removedVariables.size() > 0 )
-    {
-        cout << "p";
-        for( unsigned int i = 0; i < removedVariables.size(); i++ )
-            cout << " " << removedVariables[ i ]->getId();            
-        cout << endl;
-    }
-    
+        
+    printRemovedVariables( removedVariables );
     return maxIndex;
 }
 
@@ -1231,6 +1219,18 @@ Solver::addVariableInLowerEstimate(
     lowerEstimate.push_back( var );
 }
         
+void
+Solver::printRemovedVariables(
+    vector< Variable* >& removedVariables )
+{
+    if( isMultiSolver() && removedVariables.size() > 0 )
+    {
+        cout << "r";
+        for( unsigned int i = 0; i < removedVariables.size(); i++ )
+            cout << " " << removedVariables[ i ]->getId();            
+        cout << endl;
+    }
+}
 
 #endif	/* SOLVER_H */
 
