@@ -1146,6 +1146,7 @@ Solver::printLearnedClauseForMultiSolver(
 void
 Solver::shrinkUpperEstimate()
 {
+    vector< Variable* > removedVariables;
     for( unsigned int i = 0; i < clauseFromModel->size(); )
     {
         Variable* var = clauseFromModel->getAt( i ).getVariable();
@@ -1155,15 +1156,25 @@ Solver::shrinkUpperEstimate()
             var->setCautiousConsequenceCandidate( false );
             clauseFromModel->swapLiteralsNoWatches( i, clauseFromModel->size() - 1 );
             clauseFromModel->removeLastLiteralNoWatches();
+            removedVariables.push_back( var );
         }
         else
             ++i;
+    }
+    
+    if( isMultiSolver() && removedVariables.size() > 0 )
+    {
+        cout << "p";
+        for( unsigned int i = 0; i < removedVariables.size(); i++ )
+            cout << " " << removedVariables[ i ]->getId();            
+        cout << endl;
     }
 }
 
 unsigned int
 Solver::removeDeterministicConsequencesFromUpperEstimate()
 {
+    vector< Variable* > removedVariables;
     Activity maxAct = 0;
     unsigned int maxIndex = 0;
 
@@ -1179,6 +1190,7 @@ Solver::removeDeterministicConsequencesFromUpperEstimate()
             var->setCautiousConsequenceCandidate( false );
             clauseFromModel->swapLiteralsNoWatches( i, clauseFromModel->size() - 1 );
             clauseFromModel->removeLastLiteralNoWatches();
+            removedVariables.push_back( var );
         }
         else
         {
@@ -1189,6 +1201,14 @@ Solver::removeDeterministicConsequencesFromUpperEstimate()
             }
             ++i;
         }
+    }
+    
+    if( isMultiSolver() && removedVariables.size() > 0 )
+    {
+        cout << "p";
+        for( unsigned int i = 0; i < removedVariables.size(); i++ )
+            cout << " " << removedVariables[ i ]->getId();            
+        cout << endl;
     }
     
     return maxIndex;

@@ -738,10 +738,10 @@ bool hasNewInput()
     fd_set fds;
     tv.tv_sec = 0;
     tv.tv_usec = 0;
-    FD_ZERO(&fds);
-    FD_SET(STDIN_FILENO, &fds); //STDIN_FILENO is 0
-    select(STDIN_FILENO+1, &fds, NULL, NULL, &tv);
-    return FD_ISSET(STDIN_FILENO, &fds);
+    FD_ZERO( &fds );
+    FD_SET( STDIN_FILENO, &fds ); //STDIN_FILENO is 0
+    select( STDIN_FILENO + 1, &fds, NULL, NULL, &tv );
+    return FD_ISSET( STDIN_FILENO, &fds );
 }
 
 bool
@@ -808,7 +808,7 @@ Solver::checkForNewMessages()
                         }
                     }
                     
-                    if( clauseFromModel->size() == 1 )
+                    if( clauseFromModel->size() == 1 && claspApproachForQuery() )
                         if( !propagateLiteralOnRestart( clauseFromModel->getAt( 0 ) ) )
                             return false;
 
@@ -820,7 +820,7 @@ Solver::checkForNewMessages()
             
             case 'b':
             {
-                stringstream ss(buff + 2);
+                stringstream ss( buff + 2 );
                 int id, id2;
                 ss >> id >> id2;
                 Variable* var = getVariable( id > 0 ? id : -id );
