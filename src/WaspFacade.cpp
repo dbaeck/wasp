@@ -127,15 +127,12 @@ WaspFacade::solveQueryClaspApproach()
     if( solver.preprocessing() )
     {
         computeLowerUpperEstimate();        
-        printInitialState();
-        
-        if( solver.clauseFromModel->size() > 0 )
-            solver.clauseFromModel->attachClause();
-        
+        printInitialState();        
+
         while( solver.solve() )
         {
             ++numberOfModels;            
-            
+
             if( !claspApproachForQuery( diff ) )
                 break;
         }
@@ -166,7 +163,7 @@ WaspFacade::solveQueryClaspApproach()
             solver.clauseFromModel->swapLiteralsNoWatches( i, solver.clauseFromModel->size() - 1 );
             solver.clauseFromModel->removeLastLiteralNoWatches();            
         }
-        solver.printUpperEstimate();
+        solver.printUpperEstimate();        
         solver.printLowerEstimate();
     }
 }
@@ -476,16 +473,17 @@ WaspFacade::setRestartsPolicy(
 bool
 WaspFacade::claspApproachForQuery(
     unsigned int& diff )
-{       
+{      
     unsigned int maxLevel = 0;
     unsigned int maxPosition = 0;
     unsigned int secondMaxLevel = 0;
     unsigned int secondMaxPosition = 0;
 
     unsigned int initialClauseFromModelSize = solver.upperEstimateSize();
-    if( initialClauseFromModelSize > 1 )
+    if( initialClauseFromModelSize > 1 && !initial )
         solver.clauseFromModel->detachClause();
-
+    
+    initial = false;
     vector< Variable* > removedVariables;
     unsigned int size = solver.getLowerEstimate().size();
     for( unsigned int i = 0; i < solver.clauseFromModel->size(); )

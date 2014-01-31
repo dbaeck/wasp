@@ -215,6 +215,9 @@ class Solver
         inline void onRemovingVariableFromCautiousConsequencesCandidate( Variable* variable );
         inline void printRemovedVariables( vector< Variable* >& removedVariables );
         
+//        Clause* computeClauseFromModel();
+//        vector< Variable* > preferredChoices;
+        
     private:
         inline Variable* addVariableInternal();
         
@@ -1213,7 +1216,7 @@ void
 Solver::addVariableInLowerEstimate(
     Variable* var )
 {
-    if( var->isCautiousConsequenceCandidate() )
+    if( isMultiSolver() && var->isCautiousConsequenceCandidate() )
         cout << "c " << var->getId() << endl;
     var->setCautiousConsequence( true );
     lowerEstimate.push_back( var );
