@@ -217,6 +217,8 @@ class Solver
         
 //        Clause* computeClauseFromModel();
 //        vector< Variable* > preferredChoices;
+        inline void setAnytime( bool any ) { anytime = any; }
+        inline bool isAnytime() const { return anytime; }
         
     private:
         inline Variable* addVariableInternal();
@@ -267,6 +269,7 @@ class Solver
         bool firstChoiceFromQuery;
         bool multi;
         bool shuffleAtEachRestart;
+        bool anytime;
                 
         struct DeletionCounters
         {
@@ -312,7 +315,8 @@ Solver::Solver()
     literalsInLearnedClauses( 0 ),
     query( NOQUERY ),
     firstChoiceFromQuery( false ),
-    shuffleAtEachRestart( true )
+    shuffleAtEachRestart( true ),
+    anytime( true )
 {
     satelite = new Satelite( *this );
     deletionCounters.init();
@@ -1102,7 +1106,7 @@ Solver::propagateLiteralOnRestart(
         nextValueOfPropagation--;            
         Variable* variableToPropagate = getNextVariableToPropagate();
         
-        if( variableToPropagate->isTrue() && variableToPropagate->isCautiousConsequenceCandidate() )
+        if( variableToPropagate->isTrue() && variableToPropagate->isCautiousConsequenceCandidate() && isAnytime() )
             addVariableInLowerEstimate( variableToPropagate );
 
         propagate( variableToPropagate );
@@ -1162,8 +1166,14 @@ Solver::shrinkUpperEstimate()
             clauseFromModel->removeLastLiteralNoWatches();
             removedVariables.push_back( var );
         }
+        else if( !isAnytime() && var->isTrue() && var->getDecisionLevel() == 0 )
+        {
+            clauseFromModel->swapLiteralsNoWatches( i, clauseFromModel->size() - 1 );
+            clauseFromModel->removeLastLiteralNoWatches();
+            addVariableInLowerEstimate( var );
+        }
         else
-            ++i;
+            ++i;        
     }
     
     printRemovedVariables( removedVariables );
@@ -1190,6 +1200,8 @@ Solver::removeDeterministicConsequencesFromUpperEstimate()
             clauseFromModel->removeLastLiteralNoWatches();
             if( !var->isTrue() )
                 removedVariables.push_back( var );
+            else if( !shuffleAtEachRestart && !isAnytime() )
+                addVariableInLowerEstimate( var );
         }
         else
         {

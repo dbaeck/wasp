@@ -71,6 +71,8 @@ namespace wasp
             static unsigned int query;
             
             static bool multi;
+            
+            static bool anytime;
     };
 };
 

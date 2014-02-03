@@ -198,7 +198,10 @@ WaspFacade::solveQueryWaspApproach()
             }
             else
                 goto foundIncoherence;
-        }        
+        }
+        
+        if( solver.waspApproachForQuery() || solver.waspFirstModelApproachForQuery() )
+            solver.setAnytime( true );
 
         solver.setFirstChoiceFromQuery( true );
         if( solver.iterativeApproachForQuery() )
@@ -505,6 +508,8 @@ WaspFacade::claspApproachForQuery(
             solver.clauseFromModel->swapLiteralsNoWatches( i, solver.clauseFromModel->size() - 1 );
             solver.clauseFromModel->removeLastLiteralNoWatches();
             var->setCautiousConsequenceCandidate( false );
+            if( !solver.isAnytime() )
+                solver.addVariableInLowerEstimate( var );
             //removedVariables.push_back( var );
         }
         else

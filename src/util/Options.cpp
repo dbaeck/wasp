@@ -79,6 +79,7 @@ namespace wasp
 #define OPTIONID_max_cost ( 'z' + 102 )
 #define OPTIONID_query ( 'z' + 103 )
 #define OPTIONID_multi ( 'z' + 104 )
+#define OPTIONID_disable_anytime ( 'z' + 105 )
     
 #ifdef TRACE_ON
 TraceLevels Options::traceLevels;
@@ -116,6 +117,8 @@ unsigned int Options::maxCost = MAXUNSIGNEDINT;
 unsigned int Options::query = NOQUERY;
 
 bool Options::multi = false;
+
+bool Options::anytime = true;
     
 void
 Options::parse(
@@ -180,6 +183,7 @@ Options::parse(
                 { "time-limit", required_argument, NULL, OPTIONID_time_limit },
                 { "max-cost", required_argument, NULL, OPTIONID_max_cost },
                 { "query", optional_argument, NULL, OPTIONID_query },
+                { "disable-anytime", optional_argument, NULL, OPTIONID_disable_anytime },
                 { "multi", no_argument, NULL, OPTIONID_multi },
 
                 // The NULL-option indicates the end of the array.
@@ -357,6 +361,10 @@ Options::parse(
                 multi = true;
                 break;
                 
+            case OPTIONID_disable_anytime:
+                anytime = false;
+                break;
+                
             case OPTIONID_help:
                 Help::printHelp();
                 exit( 0 );
@@ -402,6 +410,7 @@ Options::setOptions(
     waspFacade.setPrintProgram( printProgram );
     waspFacade.setQuery( query );
     waspFacade.setMultiSolver( multi );
+    waspFacade.setAnytime( anytime );
 }
 
 };

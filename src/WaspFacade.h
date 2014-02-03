@@ -49,6 +49,8 @@ class WaspFacade
         inline void setQuery( unsigned int value );
         inline void setMultiSolver( bool multi );
         
+        inline void setAnytime( bool anytime );
+        
     private:
         Solver solver;        
         
@@ -123,6 +125,13 @@ WaspFacade::setMultiSolver(
     bool multi )
 {
     solver.setMultiSolver( multi );
+}
+
+void
+WaspFacade::setAnytime(
+    bool anytime )
+{
+    solver.setAnytime( anytime );
 }
 
 void
