@@ -874,7 +874,7 @@ Solver::printNames() const
 {
     cout << "n";
     for( unsigned int i = 0 ; i < lowerEstimate.size(); i++ )
-        cout << " " << lowerEstimate[ i ]->getId();
+        cout << " " << *lowerEstimate[ i ];
     for( unsigned int i = 0; i < clauseFromModel->size(); i++ )
         cout << " " << *( clauseFromModel->getAt( i ).getVariable() );
     cout << endl;
