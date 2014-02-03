@@ -55,7 +55,6 @@ class WaspFacade
         unsigned int numberOfModels;
         unsigned int maxModels;
         bool printProgram;
-        bool initial;
         //vector< Variable* > lowerEstimate;
         //vector< Variable* > upperEstimate;
         
@@ -69,7 +68,7 @@ class WaspFacade
         inline void printInitialState();
 };
 
-WaspFacade::WaspFacade() : numberOfModels( 0 ), maxModels( 1 ), printProgram( false ), initial( true )
+WaspFacade::WaspFacade() : numberOfModels( 0 ), maxModels( 1 ), printProgram( false )
 {    
 }
 

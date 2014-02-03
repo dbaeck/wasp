@@ -480,10 +480,12 @@ WaspFacade::claspApproachForQuery(
     unsigned int secondMaxPosition = 0;
 
     unsigned int initialClauseFromModelSize = solver.upperEstimateSize();
-    if( initialClauseFromModelSize > 1 && !initial )
+    if( solver.clauseFromModel->isAttached() )
+    {
+        solver.clauseFromModel->setDetached();
         solver.clauseFromModel->detachClause();
+    }
     
-    initial = false;
     vector< Variable* > removedVariables;
     unsigned int size = solver.getLowerEstimate().size();
     for( unsigned int i = 0; i < solver.clauseFromModel->size(); )
@@ -503,7 +505,7 @@ WaspFacade::claspApproachForQuery(
             solver.clauseFromModel->swapLiteralsNoWatches( i, solver.clauseFromModel->size() - 1 );
             solver.clauseFromModel->removeLastLiteralNoWatches();
             var->setCautiousConsequenceCandidate( false );
-            removedVariables.push_back( var );
+            //removedVariables.push_back( var );
         }
         else
         {
@@ -537,6 +539,7 @@ WaspFacade::claspApproachForQuery(
         solver.clauseFromModel->swapLiteralsNoWatches( 0, maxPosition );
         solver.clauseFromModel->swapLiteralsNoWatches( 1, secondMaxPosition != 0 ? secondMaxPosition : maxPosition );
         statistics( onAddingClause( size ) );
+        solver.clauseFromModel->setAttached();
         solver.clauseFromModel->attachClause();            
     }
     assert( solver.clauseFromModel != NULL );

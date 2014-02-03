@@ -796,8 +796,11 @@ Solver::checkForNewMessages()
                 Literal lit( var, NEGATIVE );
                 if( clauseFromModel != NULL )
                 {                    
-                    if( clauseFromModel->size() > 2 && claspApproachForQuery() )
-                       clauseFromModel->detachClause();
+                    if( clauseFromModel->isAttached() )
+                    {
+                        clauseFromModel->setDetached();
+                        clauseFromModel->detachClause();
+                    }
                     for( unsigned i = 0; i < clauseFromModel->size(); i++ )
                     {
                         if( clauseFromModel->getAt( i ) == lit )
@@ -813,7 +816,10 @@ Solver::checkForNewMessages()
                             return false;
 
                     if( clauseFromModel->size() > 2 && claspApproachForQuery() )
+                    {
+                        clauseFromModel->setAttached();
                         clauseFromModel->attachClause();
+                    }
                 }
                 break;
             }

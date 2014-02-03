@@ -1188,7 +1188,8 @@ Solver::removeDeterministicConsequencesFromUpperEstimate()
             var->setCautiousConsequenceCandidate( false );
             clauseFromModel->swapLiteralsNoWatches( i, clauseFromModel->size() - 1 );
             clauseFromModel->removeLastLiteralNoWatches();
-            removedVariables.push_back( var );
+            if( !var->isTrue() )
+                removedVariables.push_back( var );
         }
         else
         {

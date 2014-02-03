@@ -109,6 +109,10 @@ class Clause
         inline void setInQueue(){ clauseData.inQueue = 1; }
         inline bool isInQueue(){ return clauseData.inQueue == 1; }
         
+        inline void setAttached() { attached = true; }
+        inline void setDetached() { attached = false; }
+        inline bool isAttached() const { return attached; }
+        
         bool canBeSimplified;        
         
     protected:
@@ -144,6 +148,8 @@ class Clause
         Activity act;
 //        bool learned;
         
+        bool attached;
+        
         struct
         {        
             unsigned inQueue                : 1;
@@ -152,7 +158,7 @@ class Clause
         } clauseData;
 };
 
-Clause::Clause(): canBeSimplified( true ), lastSwapIndex( 1 ), signature( 0 ), act( 0.0 )
+Clause::Clause(): canBeSimplified( true ), lastSwapIndex( 1 ), signature( 0 ), act( 0.0 ), attached( false )
 {
     literals.reserve( 8 );
     clauseData.inQueue = 0;
