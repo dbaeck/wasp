@@ -66,6 +66,7 @@ class WaspFacade
         void solveQueryClaspApproach();
         void solveQueryHybridApproach();
         void solveQueryWaspApproach();
+        void solveQueryEnumeration();
         
         inline void printInitialState();
 };

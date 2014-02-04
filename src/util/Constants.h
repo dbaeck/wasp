@@ -78,6 +78,7 @@
 #define WASPQUERYFIRSTMODEL 4
 #define HYBRIDQUERY 5
 #define ITERATIVEQUERY 6
+#define ENUMERATIONQUERY 7
 
 /* 
  * Error messages

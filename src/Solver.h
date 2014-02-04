@@ -189,6 +189,7 @@ class Solver
         inline bool waspFirstModelApproachForQuery() const { return query == WASPQUERYFIRSTMODEL; }
         inline bool hybridApproachForQuery() const { return query == HYBRIDQUERY; }
         inline bool iterativeApproachForQuery() const { return query == ITERATIVEQUERY; }
+        inline bool enumerationApproachForQuery() const { return query == ENUMERATIONQUERY; }
         
         inline void printLowerEstimate() const;
         inline void printUpperEstimate() const;
@@ -1154,6 +1155,7 @@ Solver::printLearnedClauseForMultiSolver(
 void
 Solver::shrinkUpperEstimate()
 {
+    unsigned int lowerEstimateInitialSize = lowerEstimate.size();
     vector< Variable* > removedVariables;
     for( unsigned int i = 0; i < clauseFromModel->size(); )
     {
@@ -1175,6 +1177,9 @@ Solver::shrinkUpperEstimate()
         else
             ++i;        
     }
+    
+    if( lowerEstimateInitialSize < lowerEstimate.size() )
+        printLowerEstimate();
     
     printRemovedVariables( removedVariables );
 }

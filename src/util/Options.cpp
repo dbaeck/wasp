@@ -352,7 +352,7 @@ Options::parse(
                 if( optarg )
                 {
                     query = atoi( optarg );
-                    if( query > ITERATIVEQUERY )
+                    if( query > ENUMERATIONQUERY )
                         ErrorMessage::errorGeneric( "Incorrect value for option --query." );
                 }
                 break;

@@ -80,6 +80,10 @@ WaspFacade::solve()
             solveQueryWaspApproach();
             return;
             
+        case ENUMERATIONQUERY:
+            solveQueryEnumeration();
+            return;
+            
         default:
             assert( queryType == NOQUERY );
     }
@@ -244,78 +248,6 @@ WaspFacade::solveQueryWaspApproach()
         solver.printLowerEstimate();
 }
 
-//void
-//WaspFacade::solveQueryWaspApproachFirstModel()
-//{
-//    assert( solver.waspFirstModelApproachForQuery() );
-//    solver.init();
-//
-//    if( solver.preprocessing() )
-//    {
-//        computeLowerUpperEstimate();
-//        uint64_t lowerEstimateSize = solver.getLowerEstimate().size();
-//        uint64_t upperEstimateSize = solver.getPreferredChoices().size();
-//        uint64_t diff = 0;
-//        cout << "Answers from well founded: " << lowerEstimateSize << endl;
-//        //cout << "Number of atoms to try: " << upperEstimateSize << endl;        
-//        
-//        printInitialState();
-//
-//        if( solver.solve() )
-//        {                
-//            solver.setFirstChoiceFromQuery( true );
-//            ++numberOfModels;
-//            shrinkUpperEstimate();
-//            diff = diff + ( upperEstimateSize - solver.getPreferredChoices().size() );
-//            upperEstimateSize = solver.getPreferredChoices().size();
-//            solver.printUpperEstimate();                
-//            solver.doRestart();
-//            solver.simplifyOnRestart();
-//            solver.clearConflictStatus();
-//        }
-//        else
-//            solver.getPreferredChoices().clear();
-//
-//        while( !solver.getPreferredChoices().empty() )
-//        {
-//            if( solver.solve() )
-//            {                
-//                shrinkUpperEstimate();
-//                diff = diff + ( upperEstimateSize - solver.getPreferredChoices().size() );
-//                upperEstimateSize = solver.getPreferredChoices().size();
-//                solver.printUpperEstimate();
-//
-//                if( solver.getPreferredChoices().empty() )
-//                    break;
-//
-//                solver.doRestart();
-//                solver.simplifyOnRestart();
-//                solver.clearConflictStatus();
-//            }
-//            else
-//                break;
-//        }
-//        
-//        if( numberOfModels > 0 )
-//            cerr << "Avg of cut Models: " << diff / numberOfModels << endl;
-//        cerr << "Answers not in well founded: " << solver.getLowerEstimate().size() - lowerEstimateSize << endl;
-//        cerr << "Enumerated Models: " << numberOfModels << endl;
-//    }
-//
-//    if( numberOfModels == 0 )
-//    {
-//        trace_msg( enumeration, 1, "No model found." );
-//        solver.foundIncoherence();
-//    }
-//    else
-//    {
-//        cerr << "Cautious consequences:" << endl;
-//        for( unsigned int i = 0; i < solver.getLowerEstimate().size(); i++ )
-//            cerr << *solver.getLowerEstimate()[ i ] << " ";
-//        cerr << endl;
-//    }
-//}
-
 void
 WaspFacade::solveQueryHybridApproach()
 {
@@ -363,6 +295,58 @@ WaspFacade::solveQueryHybridApproach()
             cerr << *solver.clauseFromModel->getAt( i ).getVariable() << " ";
         cerr << endl;
     }
+}
+
+void
+WaspFacade::solveQueryEnumeration()
+{
+    assert( solver.enumerationApproachForQuery() );    
+    solver.init();     
+    
+    if( solver.preprocessing() )
+    {
+        computeLowerUpperEstimate();
+        uint64_t upperEstimateSize = solver.upperEstimateSize();        
+        uint64_t lowerEstimateSize = solver.getLowerEstimate().size();
+        uint64_t diff = 0;     
+
+        while( solver.solve() )
+        {
+            trace_msg( enumeration, 1, "Model number: " << numberOfModels + 1 );
+            numberOfModels++;
+            solver.shrinkUpperEstimate();
+            
+            if( lowerEstimateSize < solver.getLowerEstimate().size() )
+            {
+                lowerEstimateSize = solver.getLowerEstimate().size();                
+                solver.printLowerEstimate();
+            }
+            
+            if( upperEstimateSize > solver.upperEstimateSize() )
+            {
+                diff = diff + ( upperEstimateSize - solver.upperEstimateSize() );
+                upperEstimateSize = solver.upperEstimateSize();
+                solver.printUpperEstimate();
+            }
+            
+            if( solver.upperEstimateSize() == 0 )
+                break;
+            
+            if( !solver.addClauseFromModelAndBackjump() )
+                break;            
+        }
+    }
+
+    if( numberOfModels == 0 )
+    {
+        trace_msg( enumeration, 1, "No model found." );
+        solver.foundIncoherence();
+    }
+    else
+    {
+        solver.printUpperEstimate();
+        solver.printLowerEstimate();
+    }    
 }
 
 void
