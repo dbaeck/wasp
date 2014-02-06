@@ -221,6 +221,8 @@ class Solver
         inline void setAnytime( bool any ) { anytime = any; }
         inline bool isAnytime() const { return anytime; }
         
+        inline void setQueryVerbosity( unsigned int verb ){ queryVerbosity = verb; }
+        
     private:
         inline Variable* addVariableInternal();
         
@@ -271,7 +273,8 @@ class Solver
         bool multi;
         bool shuffleAtEachRestart;
         bool anytime;
-                
+        unsigned int queryVerbosity;        
+        
         struct DeletionCounters
         {
             Activity increment;
@@ -317,7 +320,8 @@ Solver::Solver()
     query( NOQUERY ),
     firstChoiceFromQuery( false ),
     shuffleAtEachRestart( true ),
-    anytime( true )
+    anytime( true ),
+    queryVerbosity( 0 )
 {
     satelite = new Satelite( *this );
     deletionCounters.init();
@@ -1064,9 +1068,21 @@ Solver::printLowerEstimate() const
     {
         printTime( cout );
         cout << "Certain answers (" << lowerEstimate.size() << "):" << endl;
-        for( unsigned int i = 0; i < lowerEstimate.size(); i++ )
-            cout << *lowerEstimate[ i ] << " ";
-        cout << endl;
+        if( queryVerbosity == 1 )
+        {
+            static unsigned int lastIndex = 0;
+            unsigned int i = lastIndex;
+            for( ; i < lowerEstimate.size(); i++ )
+                cout << *lowerEstimate[ i ] << " ";
+            cout << endl;
+            lastIndex = i;
+        }
+        else if( queryVerbosity >= 2 )
+        {
+            for( unsigned int i = 0; i < lowerEstimate.size(); i++ )
+                cout << *lowerEstimate[ i ] << " ";
+            cout << endl;
+        }
     }
 }
 
@@ -1089,9 +1105,12 @@ Solver::printUpperEstimate() const
     {
         printTime( cout );
         cout << "Possible answers (" << ( clauseFromModel->size() + lowerEstimate.size() ) << "; " << clauseFromModel->size() << "):" << endl;
-        for( unsigned int i = 0; i < clauseFromModel->size(); i++ )
-            cout << " " << *( clauseFromModel->getAt( i ).getVariable() );
-        cout << endl;    
+        if( queryVerbosity >= 2 )
+        {
+            for( unsigned int i = 0; i < clauseFromModel->size(); i++ )
+                cout << " " << *( clauseFromModel->getAt( i ).getVariable() );
+            cout << endl;
+        }
     }
 }
 

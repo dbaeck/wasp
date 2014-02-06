@@ -50,6 +50,7 @@ class WaspFacade
         inline void setMultiSolver( bool multi );
         
         inline void setAnytime( bool anytime );
+        inline void setQueryVerbosity( unsigned int verb );
         
     private:
         Solver solver;        
@@ -91,6 +92,13 @@ WaspFacade::setPrintProgram(
     bool print )
 {
     printProgram = print;
+}
+
+void
+WaspFacade::setQueryVerbosity(
+    unsigned int verb )
+{
+    solver.setQueryVerbosity( verb );
 }
 
 void

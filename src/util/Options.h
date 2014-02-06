@@ -73,6 +73,8 @@ namespace wasp
             static bool multi;
             
             static bool anytime;
+            
+            static unsigned int queryVerbosity;
     };
 };
 

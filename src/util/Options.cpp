@@ -80,6 +80,7 @@ namespace wasp
 #define OPTIONID_query ( 'z' + 103 )
 #define OPTIONID_multi ( 'z' + 104 )
 #define OPTIONID_disable_anytime ( 'z' + 105 )
+#define OPTIONID_query_verbosity ( 'z' + 106 )
     
 #ifdef TRACE_ON
 TraceLevels Options::traceLevels;
@@ -119,6 +120,8 @@ unsigned int Options::query = NOQUERY;
 bool Options::multi = false;
 
 bool Options::anytime = true;
+
+unsigned int Options::queryVerbosity = 0;
     
 void
 Options::parse(
@@ -185,6 +188,7 @@ Options::parse(
                 { "query", optional_argument, NULL, OPTIONID_query },
                 { "disable-anytime", optional_argument, NULL, OPTIONID_disable_anytime },
                 { "multi", no_argument, NULL, OPTIONID_multi },
+                { "query-verbosity", required_argument, NULL, OPTIONID_query_verbosity },
 
                 // The NULL-option indicates the end of the array.
                 { NULL, 0, NULL, 0 }
@@ -383,6 +387,11 @@ Options::parse(
                 if( optarg )
                     maxCost = atoi( optarg );
                 break;
+                
+            case OPTIONID_query_verbosity:
+                if( optarg )
+                    queryVerbosity = atoi( optarg );
+                break;
 
             default:
                 ErrorMessage::errorGeneric( "This option is not supported." );
@@ -411,6 +420,7 @@ Options::setOptions(
     waspFacade.setQuery( query );
     waspFacade.setMultiSolver( multi );
     waspFacade.setAnytime( anytime );
+    waspFacade.setQueryVerbosity( queryVerbosity );
 }
 
 };
