@@ -1168,12 +1168,13 @@ Solver::shrinkUpperEstimate()
             clauseFromModel->removeLastLiteralNoWatches();
             removedVariables.push_back( var );
         }
-        else if( !isAnytime() && var->isTrue() && var->getDecisionLevel() == 0 )
+        else if( var->isTrue() && var->getDecisionLevel() == 0 )
         {
             clauseFromModel->swapLiteralsNoWatches( i, clauseFromModel->size() - 1 );
             clauseFromModel->removeLastLiteralNoWatches();
-            addVariableInLowerEstimate( var );
-        }
+            if( !isAnytime() )
+                addVariableInLowerEstimate( var );
+        }                
         else
             ++i;        
     }
