@@ -115,7 +115,7 @@ unsigned int Options::deletionThreshold = 8;
 
 unsigned int Options::maxCost = MAXUNSIGNEDINT;
 
-unsigned int Options::query = NOQUERY;
+unsigned int Options::query = NO_QUERY;
 
 bool Options::multi = false;
 
@@ -185,7 +185,7 @@ Options::parse(
                 { "stdin", no_argument, NULL, OPTIONID_stdin },
                 { "time-limit", required_argument, NULL, OPTIONID_time_limit },
                 { "max-cost", required_argument, NULL, OPTIONID_max_cost },
-                { "query", optional_argument, NULL, OPTIONID_query },
+                { "query-algorithm", optional_argument, NULL, OPTIONID_query },
                 { "disable-anytime", optional_argument, NULL, OPTIONID_disable_anytime },
                 { "multi", no_argument, NULL, OPTIONID_multi },
                 { "query-verbosity", required_argument, NULL, OPTIONID_query_verbosity },
@@ -352,11 +352,11 @@ Options::parse(
                 break; 
                 
             case OPTIONID_query:
-                query = WASPQUERY;
+                query = UNDERESTIMATE_INCREASE_ALGORITHM;
                 if( optarg )
                 {
                     query = atoi( optarg );
-                    if( query > ENUMERATIONQUERY )
+                    if( query > UNDERESTIMATE_INC_NOFIRSTMODEL_ALGORITHM )
                         ErrorMessage::errorGeneric( "Incorrect value for option --query." );
                 }
                 break;

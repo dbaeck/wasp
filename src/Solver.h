@@ -183,13 +183,12 @@ class Solver
         inline const vector< Variable* >& getLowerEstimate() const { return lowerEstimate; }
         
         inline unsigned int getQueryType() const { return query; }
-        inline bool hasQuery() const { return query != NOQUERY; }
-        inline bool claspApproachForQuery() const { return query == CLASPQUERY || query == CLASPQUERYRESTART; }
-        inline bool waspApproachForQuery() const { return query == WASPQUERY; }
-        inline bool waspFirstModelApproachForQuery() const { return query == WASPQUERYFIRSTMODEL; }
-        inline bool hybridApproachForQuery() const { return query == HYBRIDQUERY; }
-        inline bool iterativeApproachForQuery() const { return query == ITERATIVEQUERY; }
-        inline bool enumerationApproachForQuery() const { return query == ENUMERATIONQUERY; }
+        inline bool hasQuery() const { return query != NO_QUERY; }
+        inline bool modelBasedAlgorithm() const { return query == MODELBASED_ALGORITHM; }
+        inline bool underestimateIncreaseAlgorithm() const { return query == UNDERESTIMATE_INCREASE_ALGORITHM; }
+        inline bool underestimateIncreaseDisableFirstModelAlgorithm() const { return query == UNDERESTIMATE_INC_NOFIRSTMODEL_ALGORITHM; }
+        inline bool iterativeApproachForQuery() const { return query == ITERATIVE_ALGORITHM; }
+        inline bool enumerationApproachForQuery() const { return query == ENUMERATION_ALGORITHM; }
         
         inline void printLowerEstimate() const;
         inline void printUpperEstimate() const;
@@ -317,7 +316,7 @@ Solver::Solver()
     nextValueOfPropagation( 0 ),
     literalsInClauses( 0 ),
     literalsInLearnedClauses( 0 ),
-    query( NOQUERY ),
+    query( NO_QUERY ),
     firstChoiceFromQuery( false ),
     shuffleAtEachRestart( true ),
     anytime( true ),
@@ -641,11 +640,6 @@ Solver::chooseLiteral()
         assert( clauseFromModel->size() != 0 );
         if( shuffleAtEachRestart )
         {
-            static unsigned int counter = 0;
-            if( hybridApproachForQuery() && ++counter % 32 != 0 )
-            {
-                goto normalChoice;
-            }
             unsigned int oldSize = lowerEstimate.size();
             unsigned int maxIndex = removeDeterministicConsequencesFromUpperEstimate();
             
@@ -653,13 +647,8 @@ Solver::chooseLiteral()
                 printLowerEstimate();
 
             if(  clauseFromModel->size() == 0 )
-            {
-                if( hybridApproachForQuery() )
-                    goto normalChoice; 
-                else
-                    return false;
-            }
-
+                return false;
+            
             clauseFromModel->swapLiteralsNoWatches( maxIndex, 0 );
 //            Variable* tmp = preferredChoices[ maxIndex ];
 //            preferredChoices[ maxIndex ] = preferredChoices[ 0 ];
@@ -688,8 +677,7 @@ Solver::chooseLiteral()
         choice = clauseFromModel->getAt( 0 );//minisatHeuristic.makeAChoice( preferredChoices );
     }
     else
-    {
-        normalChoice:;        
+    { 
         choice = minisatHeuristic.makeAChoice();
     }
     trace( solving, 1, "Choice: %s.\n", toString( choice ).c_str() );

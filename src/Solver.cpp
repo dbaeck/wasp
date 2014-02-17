@@ -811,11 +811,11 @@ Solver::checkForNewMessages()
                         }
                     }
                     
-                    if( clauseFromModel->size() == 1 && claspApproachForQuery() )
+                    if( clauseFromModel->size() == 1 && modelBasedAlgorithm() )
                         if( !propagateLiteralOnRestart( clauseFromModel->getAt( 0 ) ) )
                             return false;
 
-                    if( clauseFromModel->size() > 2 && claspApproachForQuery() )
+                    if( clauseFromModel->size() > 2 && modelBasedAlgorithm() )
                     {
                         clauseFromModel->setAttached();
                         clauseFromModel->attachClause();

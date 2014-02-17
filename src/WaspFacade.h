@@ -62,11 +62,10 @@ class WaspFacade
         //vector< Variable* > upperEstimate;
         
         inline void computeLowerUpperEstimate();
-        bool claspApproachForQuery( unsigned int& diff );
+        bool modelBasedAlgorithmQuery( unsigned int& diff );
         
-        void solveQueryClaspApproach();
-        void solveQueryHybridApproach();
-        void solveQueryWaspApproach();
+        void solveQueryModelBased();
+        void solveQueryUnderestimateIncrease();
         void solveQueryEnumeration();
         
         inline void printInitialState();

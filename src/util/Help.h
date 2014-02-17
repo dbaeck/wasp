@@ -67,6 +67,18 @@ class Help
             cout << "--third-competition-output             - Print models according to the third competition output." << endl;
             cout << "--competition-output                   - Print models according to the fourth competition output." << endl;
             cout << separator << endl;
+            
+            cout << "Query options                          " << endl << endl;            
+            cout << "--query-algorithm                      - Enable algorithms for cautious reasoning." << endl;
+            cout << "       = 1                             - Enumeration algorithm." << endl;
+            cout << "       = 2                             - Models-based algorithm." << endl;
+            cout << "       = 3                             - Iterative algorithm." << endl;
+            cout << "       = 4                             - Underestimate increase algorithm." << endl;
+            cout << "       = 5                             - Underestimate increase algorithm disabling first model search." << endl;
+            cout << "--query-verbosity                      - Select the verbosity of query algorithms." << endl;
+            cout << "--disable-anytime                      - Disable the anytime prints." << endl;
+            cout << "--multi                                - Enable the multi algorithm for queries." << endl;
+            cout << separator << endl;
 
 //            cout << "Heuristics options                     " << endl << endl;
 //            cout << "--heuristic-berkmin                    - Berkmin-like heuristic with look ahead for choosing polarity." << endl;

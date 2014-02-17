@@ -58,34 +58,29 @@ WaspFacade::solve()
     
     switch( queryType )
     {
-        case CLASPQUERY:
+        case MODELBASED_ALGORITHM:
             //no break here
-        case CLASPQUERYRESTART:
-            solveQueryClaspApproach();
+            solveQueryModelBased();
             return;
             
-        case WASPQUERY:
-            solveQueryWaspApproach();
+        case UNDERESTIMATE_INCREASE_ALGORITHM:
+            solveQueryUnderestimateIncrease();
             return;
             
-        case WASPQUERYFIRSTMODEL:
-            solveQueryWaspApproach();
+        case UNDERESTIMATE_INC_NOFIRSTMODEL_ALGORITHM:
+            solveQueryUnderestimateIncrease();
             return;
             
-        case HYBRIDQUERY:
-            solveQueryHybridApproach();
+        case ITERATIVE_ALGORITHM:
+            solveQueryUnderestimateIncrease();
             return;
             
-        case ITERATIVEQUERY:
-            solveQueryWaspApproach();
-            return;
-            
-        case ENUMERATIONQUERY:
+        case ENUMERATION_ALGORITHM:
             solveQueryEnumeration();
             return;
             
         default:
-            assert( queryType == NOQUERY );
+            assert( queryType == NO_QUERY );
     }
     
     assert( !solver.hasQuery() );
@@ -122,9 +117,9 @@ WaspFacade::solve()
 }
 
 void
-WaspFacade::solveQueryClaspApproach()
+WaspFacade::solveQueryModelBased()
 {
-    assert( solver.claspApproachForQuery() );
+    assert( solver.modelBasedAlgorithm() );
     solver.init();
 
     unsigned int diff = 0;
@@ -137,7 +132,7 @@ WaspFacade::solveQueryClaspApproach()
         {
             ++numberOfModels;            
 
-            if( !claspApproachForQuery( diff ) )
+            if( !modelBasedAlgorithmQuery( diff ) )
                 break;
         }
     }
@@ -173,9 +168,9 @@ WaspFacade::solveQueryClaspApproach()
 }
 
 void
-WaspFacade::solveQueryWaspApproach()
+WaspFacade::solveQueryUnderestimateIncrease()
 {
-    assert( solver.waspApproachForQuery() );
+    assert( solver.underestimateIncreaseAlgorithm() );
     solver.init();
     
     if( solver.preprocessing() )
@@ -186,7 +181,7 @@ WaspFacade::solveQueryWaspApproach()
         
         printInitialState();
         
-        if( solver.waspFirstModelApproachForQuery() || solver.iterativeApproachForQuery() )
+        if( solver.underestimateIncreaseDisableFirstModelAlgorithm() || solver.iterativeApproachForQuery() )
         {            
             if( solver.solve() )
             {
@@ -204,7 +199,7 @@ WaspFacade::solveQueryWaspApproach()
                 goto foundIncoherence;
         }
         
-        if( solver.waspApproachForQuery() || solver.waspFirstModelApproachForQuery() )
+        if( solver.underestimateIncreaseAlgorithm() || solver.underestimateIncreaseDisableFirstModelAlgorithm() )
             solver.setAnytime( true );
 
         solver.setFirstChoiceFromQuery( true );
@@ -246,55 +241,6 @@ WaspFacade::solveQueryWaspApproach()
     }
     else
         solver.printLowerEstimate();
-}
-
-void
-WaspFacade::solveQueryHybridApproach()
-{
-    assert( solver.hybridApproachForQuery() );
-    solver.init();
-
-    uint64_t lowerEstimateInitialSize = 0;
-    unsigned int diff = 0;
-    if( solver.preprocessing() )
-    {
-        computeLowerUpperEstimate();
-        cout << "Answers from well founded: " << lowerEstimateInitialSize << endl;
-        
-        printInitialState();
-
-        while( solver.solve() )
-        {
-            ++numberOfModels;    
-            solver.shrinkUpperEstimate();            
-            if( numberOfModels == 1 )
-                solver.setFirstChoiceFromQuery( true );
-            
-            if( !claspApproachForQuery( diff ) )
-                break;            
-        }
-    }
-
-    if( numberOfModels == 0 )
-    {
-        trace_msg( enumeration, 1, "No model found." );
-        solver.foundIncoherence();
-    }
-    else
-    {
-        assert( solver.clauseFromModel != NULL );
-        cerr << "Avg of cut Models: " << diff / numberOfModels << endl;
-        cerr << "Answers not in well founded: " << ( solver.getLowerEstimate().size() + solver.clauseFromModel->size() ) - lowerEstimateInitialSize << endl;
-        cerr << "Enumerated Models: " << numberOfModels << endl;
-
-        cerr << "Cautious consequences:" << endl;
-        for( unsigned int i = 0; i < solver.getLowerEstimate().size(); i++ )
-            cerr << *solver.getLowerEstimate()[ i ] << " ";
-        
-        for( unsigned int i = 0; i < solver.clauseFromModel->size(); i++ )
-            cerr << *solver.clauseFromModel->getAt( i ).getVariable() << " ";
-        cerr << endl;
-    }
 }
 
 void
@@ -458,7 +404,7 @@ WaspFacade::setRestartsPolicy(
 }
 
 bool
-WaspFacade::claspApproachForQuery(
+WaspFacade::modelBasedAlgorithmQuery(
     unsigned int& diff )
 {      
     unsigned int maxLevel = 0;
@@ -517,7 +463,7 @@ WaspFacade::claspApproachForQuery(
     solver.printRemovedVariables( removedVariables );
 
     diff = diff + ( initialClauseFromModelSize - solver.upperEstimateSize() );
-    if( size < solver.getLowerEstimate().size() )
+    if( size < solver.getLowerEstimate().size() && solver.isAnytime() )
         solver.printLowerEstimate();
 
     if( solver.upperEstimateSize() > 1 )
@@ -544,9 +490,6 @@ WaspFacade::claspApproachForQuery(
         if( solver.clauseFromModel->getAt( 0 ).getDecisionLevel() == unrollLevel )
             --unrollLevel;
         
-        if( solver.getQueryType() == CLASPQUERYRESTART )
-            unrollLevel = 0;
-
         solver.unroll( unrollLevel );
         if( !solver.clauseFromModel->getAt( 1 ).isUndefined() )
         {
