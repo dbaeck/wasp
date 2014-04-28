@@ -193,7 +193,7 @@ class Solver
         inline Satelite* getSatelite() { return satelite; }
         
         inline void addAggregate( Aggregate* aggr ) { assert( aggr != NULL ); aggregates.push_back( aggr ); }
-        inline bool hasPropagators() const { return ( !tight() || !aggregates.empty() || hasOptimizationAggregate() ); }
+        inline bool hasPropagators() const { return ( true || !tight() || !aggregates.empty() || hasOptimizationAggregate() ); }
         
         inline void turnOffSimplifications() { callSimplifications_ = false; }
         inline bool callSimplifications() const { return callSimplifications_; }
@@ -211,10 +211,12 @@ class Solver
         inline void addPreferredChoicesFromOptimizationLiterals();
         inline void removePrefChoices() { minisatHeuristic.removePrefChoices(); }
         
+        inline void addCRuleToDelete( Clause* c ) { assert( c != NULL ); cRulesToDelete.push_back( c ); }
+        
     private:
         inline Variable* addVariableInternal();
         
-        bool checkVariablesState() const;
+        bool checkClausesContainOnlyUndefinedVariables() const;
         
         Solver( const Solver& ) : learning( *this )
         {
@@ -256,6 +258,7 @@ class Solver
         
         vector< GUSData* > gusDataVector;
         vector< Aggregate* > aggregates;
+        vector< Clause* > cRulesToDelete;
         
         Aggregate* optimizationAggregate;
         unsigned int numberOfOptimizationLevels;
@@ -885,7 +888,7 @@ Solver::preprocessing()
 
     statistics( beforePreprocessing( numberOfVariables() - numberOfAssignedLiterals(), numberOfClauses() ) );
     assert( satelite != NULL );
-    assert( checkVariablesState() );
+    assert( checkClausesContainOnlyUndefinedVariables() );
     if( callSimplifications() && !satelite->simplify() )
         return false;
 

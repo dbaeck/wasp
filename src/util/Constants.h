@@ -109,6 +109,13 @@ typedef unsigned int DECISION_POLICY;
 typedef unsigned int OUTPUT_POLICY;
 typedef unsigned int RESTARTS_POLICY;
 
+/*
+ * Crules 
+ */
+#define UNIT_PROPAGATION 0
+#define LIT_OF_COMPLETION 1
+#define FIRST_TRUE_LIT 2
+
 #ifdef TRACE_ON
 #include <string>
 #include <sstream>

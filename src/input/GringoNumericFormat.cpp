@@ -5,6 +5,7 @@
 #include "../Clause.h"
 #include "../Aggregate.h"
 #include "../util/Istream.h"
+#include "../CRule.h"
 
 #include <cassert>
 #include <iostream>
@@ -94,10 +95,12 @@ GringoNumericFormat::parse(
 
     if( solver.conflictDetected() )
         return;
-        
+    
 //    cout << "cc" << endl;
-    if( solver.numberOfClauses() + normalRules.size() > 1000000 )
-        solver.turnOffSimplifications();
+//    if( solver.numberOfClauses() + normalRules.size() > 1000000 )
+//        solver.turnOffSimplifications();
+    solver.turnOffSimplifications();
+    
 
     computeSCCs();
     if( !solver.tight() )
@@ -1280,7 +1283,8 @@ GringoNumericFormat::createCrule(
     NormalRule* rule )
 {
     assert( head.isPositive() );
-    Clause* crule = solver.newClause( rule->size() + 1 );
+//    Clause* crule = solver.newClause( rule->size() + 1 );
+    CRule* crule = new CRule( rule->size() + 1 );//solver.newClause( rule->size() + 1 );
     crule->addLiteral( head );
     for( unsigned k = 0; k < rule->negBody.size(); ++k )
         crule->addLiteral( Literal( solver.getVariable( rule->negBody[ k ] ), POSITIVE ) );
@@ -1325,7 +1329,8 @@ GringoNumericFormat::computeSCCs()
         }
         else
         {
-            Clause* crule = solver.newClause( data.numberOfHeadOccurrences + 1 );
+//            Clause* crule = solver.newClause( data.numberOfHeadOccurrences + 1 );
+            CRule* crule = new CRule( data.numberOfHeadOccurrences + 1 );
             crule->addLiteral( Literal( solver.getVariable( i ), NEGATIVE ) );
             for( unsigned j = 0; j < data.headOccurrences.size(); ++j )
             {
@@ -1366,36 +1371,86 @@ GringoNumericFormat::computeSCCs()
     solver.computeStrongConnectedComponents();
 }
 
+//void
+//GringoNumericFormat::computeCompletion()
+//{
+//    assert( propagatedLiterals == solver.numberOfAssignedLiterals() );
+//    for( unsigned i = 0; i < crules.size(); ++i )
+//    {
+//        Clause* crule = crules[ i ];
+//        assert( crule != NULL );
+//        Literal lit = crule->getAt( 0 ).getOppositeLiteral();
+//        if( !lit.isTrue() )
+//        {
+//            for( unsigned j = 1; j < crule->size(); ++j )
+//            {
+//                Literal lit2 = crule->getAt( j ).getOppositeLiteral();
+//                if( lit2.isTrue() || crule->getAt( j ) == lit )
+//                    continue;
+//                assert( lit.isUndefined() );
+//                assert( lit2.isUndefined() );
+//                   
+//                Clause* bin = solver.newClause();
+//                bin->addLiteral( lit );
+//                bin->addLiteral( lit2 );
+//                solver.addClause( bin );
+//                assert( propagatedLiterals == solver.numberOfAssignedLiterals() );
+//            }
+//        }
+//        solver.cleanAndAddClause( crule );
+//        assert( propagatedLiterals == solver.numberOfAssignedLiterals() );
+//    }    
+//}
+
 void
 GringoNumericFormat::computeCompletion()
 {
-    assert( propagatedLiterals == solver.numberOfAssignedLiterals() );
+    assert( propagatedLiterals == solver.numberOfAssignedLiterals() );    
     for( unsigned i = 0; i < crules.size(); ++i )
     {
-        Clause* crule = crules[ i ];
+        CRule* crule = crules[ i ];        
+        trace_msg( parser, 3, "Considering crule " << *crule );
         assert( crule != NULL );
-        Literal lit = crule->getAt( 0 ).getOppositeLiteral();
-        if( !lit.isTrue() )
+        Literal lit = crule->getAt( 0 );//.getOppositeLiteral();
+        crule->setCLiteral( lit );
+        
+        bool tautological = crule->removeDuplicateOfCliteral();
+        
+        if( crule->size() == 1 )
         {
-            for( unsigned j = 1; j < crule->size(); ++j )
-            {
-                Literal lit2 = crule->getAt( j ).getOppositeLiteral();
-                if( lit2.isTrue() || crule->getAt( j ) == lit )
-                    continue;
-                assert( lit.isUndefined() );
-                assert( lit2.isUndefined() );
-                   
-                Clause* bin = solver.newClause();
-                bin->addLiteral( lit );
-                bin->addLiteral( lit2 );
-                solver.addClause( bin );
-                assert( propagatedLiterals == solver.numberOfAssignedLiterals() );
-            }
+            trace_msg( parser, 3, "Deleting crule " << *crule );
+            delete crule;
+            continue;
         }
-        solver.cleanAndAddClause( crule );
+        
+        if( !lit.isFalse() )//isTrue() )
+        {
+            crule->attachCRule();
+//            for( unsigned j = 1; j < crule->size(); ++j )
+//            {
+//                Literal lit2 = crule->getAt( j ).getOppositeLiteral();
+//                if( lit2.isTrue() || crule->getAt( j ) == lit )
+//                    continue;
+//                assert( lit.isUndefined() );
+//                assert( lit2.isUndefined() );
+//                   
+//                Clause* bin = solver.newClause();
+//                bin->addLiteral( lit );
+//                bin->addLiteral( lit2 );
+//                solver.addClause( bin );
+//                assert( propagatedLiterals == solver.numberOfAssignedLiterals() );
+//            }
+        }
+        
+        if( !tautological )
+            solver.cleanAndAddClause( crule );
+        else
+            solver.addCRuleToDelete( crule );
+
         assert( propagatedLiterals == solver.numberOfAssignedLiterals() );
     }    
 }
+
 //void
 //GringoNumericFormat::computeCompletion()
 //{

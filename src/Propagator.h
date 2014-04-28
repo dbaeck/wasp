@@ -19,6 +19,7 @@
 #ifndef PROPAGATOR_H
 #define	PROPAGATOR_H
 
+class Learning;
 class Literal;
 
 class Propagator
@@ -29,6 +30,9 @@ class Propagator
 
         virtual void onLiteralFalse( Solver& solver, Literal literal, int pos ) = 0;
         virtual void reset() = 0;
+        
+        virtual void onLearning( Learning* strategy, Literal lit ) = 0;
+        virtual bool onNavigatingLiteralForAllMarked( Learning* strategy, Literal lit ) = 0;
 };
 
 #endif

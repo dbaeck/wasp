@@ -24,6 +24,7 @@
 #include "../util/Istream.h"
 #include <unordered_set>
 
+class CRule;
 using namespace std;
 
 class GringoNumericFormat
@@ -357,7 +358,7 @@ private:
     Vector< WeightConstraintRule* > delayedAggregateRewriting;
     Vector< WeightConstraintRule* > optimizationRules;
     vector< AtomData > atomData;
-    Vector< Clause* > crules;
+    Vector< CRule* > crules;
     //vector< NormalRule* > constraints;
     
     unsigned readNormalRule_numberOfCalls;

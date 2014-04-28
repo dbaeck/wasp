@@ -62,6 +62,7 @@ class Clause
         inline void attachClause();
         inline void attachClause( unsigned int firstWatch, unsigned int secondWatch );
         inline void attachClauseToAllLiterals();
+        virtual bool detach() { detachClause(); return true; }
         inline void detachClause();
         inline void detachClauseFromAllLiterals();        
         inline void detachClauseFromAllLiterals( Literal literal );        
@@ -128,6 +129,7 @@ class Clause
         
     protected:
         vector< Literal > literals;
+        unsigned int state;
 //        unsigned lastSwapIndex;
 
         virtual ostream& print( ostream& out ) const;  
@@ -174,11 +176,12 @@ class Clause
 };
 
 Clause::Clause(
-    unsigned reserve) /*: lastSwapIndex( 1 ),*/ /*signature( 0 ), act( 0.0 )*/
+    unsigned reserve ) /*: lastSwapIndex( 1 ),*/ /*signature( 0 ), act( 0.0 )*/
 {
     literals.reserve( reserve );
     clauseData.inQueue = 0;
-    clauseData.learned = 0;    
+    clauseData.learned = 0;
+    state = UNIT_PROPAGATION;
     //free();
 }
 
@@ -485,6 +488,7 @@ Clause::updateWatch()
     assert( "The other watched literal cannot be true." && !literals[ 0 ].isTrue() );
     
     //Propagate literals[ 0 ];
+    state = UNIT_PROPAGATION;
     return false;
 //    notifyImplication( solver );
 }

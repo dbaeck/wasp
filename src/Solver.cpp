@@ -59,6 +59,13 @@ Solver::~Solver()
         aggregates.pop_back();
     }
     
+    while( !cRulesToDelete.empty() )
+    {
+        assert( cRulesToDelete.back() );
+        delete cRulesToDelete.back();
+        cRulesToDelete.pop_back();
+    }
+    
     if( outputBuilder != NULL )
         delete outputBuilder;
     
@@ -604,15 +611,23 @@ Solver::removeSatisfied(
         uint64_t size = current->size();
         if( current->removeSatisfiedLiterals() )
         {
-            current->detachClause();            
             if( current->isLearned() )
                 literalsInLearnedClauses -= size;
             else
                 literalsInClauses -= size;
-            assert( !current->isLocked() );
-            delete current;
-            clauses[ i ] = clauses.back();            
-            clauses.pop_back();            
+            if( current->detach() )
+            {
+                assert( !current->isLocked() );            
+                delete current;
+                clauses[ i ] = clauses.back();
+                clauses.pop_back();
+            }
+            else
+            {
+                cRulesToDelete.push_back( clauses[ i ] );
+                clauses[ i ] = clauses.back();
+                clauses.pop_back();                
+            }
         }
         else
         {
@@ -628,7 +643,7 @@ Solver::removeSatisfied(
 }
 
 bool
-Solver::checkVariablesState() const
+Solver::checkClausesContainOnlyUndefinedVariables() const
 {
     assert( currentDecisionLevel == 0 );
     for( unsigned i = 0; i < clauses.size(); i++ )
@@ -639,8 +654,8 @@ Solver::checkVariablesState() const
             {
                 cout << j << " " << clause->getAt( j ).isTrue() << endl;
                 cout << clause->getAt( j ).numberOfOccurrences() << endl;
-                for( unsigned k = 0; k < clause->getAt( j ).numberOfOccurrences(); k++)
-                    cout << *clause->getAt(j).getOccurrence(k) << endl;
+                for( unsigned k = 0; k < clause->getAt( j ).numberOfOccurrences(); k++ )
+                    cout << *clause->getAt( j ).getOccurrence( k ) << endl;
                 cout << *clause << endl;
                 return false;                
             }
