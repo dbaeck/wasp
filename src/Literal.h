@@ -64,6 +64,7 @@ class Literal
         inline void findAndEraseClause( Clause* clauses );   
         
         inline void addPropagator( Propagator* p, int position );
+        inline void addPriorityPropagator( Propagator* p, int position );
         inline void addPostPropagator( PostPropagator* p, int position );
         
         inline unsigned int getDecisionLevel() const;
@@ -290,6 +291,14 @@ Literal::addPropagator(
     getVariable()->addPropagator( p, getSign(), position );
 }
 
+void
+Literal::addPriorityPropagator(
+    Propagator* p,
+    int position )
+{
+    assert( "Variable has not been set." && getVariable() != NULL );
+    getVariable()->addPriorityPropagator( p, getSign(), position );
+}
 
 void
 Literal::addPostPropagator(

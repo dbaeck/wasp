@@ -52,6 +52,7 @@ class Solver
         inline void init();
         bool solve();
         bool solvePropagators();
+        void priorityPropagation( Variable* variable );
         void unitPropagation( Variable* variable );
         void postPropagation( Variable* variable );
         inline void propagateWithPropagators( Variable* variable );
@@ -704,9 +705,10 @@ Solver::analyzeConflict()
         {
             nextValueOfPropagation--;            
             Variable* variableToPropagate = getNextVariableToPropagate();
-            unitPropagation( variableToPropagate );
-            if( hasPropagators() )
-                postPropagation( variableToPropagate );
+            propagateWithPropagators( variableToPropagate );
+//            unitPropagation( variableToPropagate );
+//            if( hasPropagators() )
+//                postPropagation( variableToPropagate );
 
             if( conflictDetected() )
                 return false;
@@ -1070,6 +1072,7 @@ void
 Solver::propagateWithPropagators(
     Variable* variable )
 {
+    priorityPropagation( variable );
     unitPropagation( variable );
     postPropagation( variable );
 }

@@ -136,12 +136,14 @@ class Variable
         
         void onLearningForUnfounded( Learning& learning );
         inline void addPropagator( Propagator* p, unsigned int sign, int position ) { propagators[ sign ].push_back( pair< Propagator*, int >( p, position ) ); }
+        inline void addPriorityPropagator( Propagator* p, unsigned int sign, int position ) { priorityPropagators[ sign ].push_back( pair< Propagator*, int >( p, position ) ); }
         inline void addPostPropagator( PostPropagator* p, unsigned int sign, int position ) { postPropagators[ sign ].push_back( pair< PostPropagator*, int >( p, position ) ); }
         
         bool isFrozen() const { return frozen; }
         void setFrozen() { frozen = true; }
         
         void unitPropagation( Solver& solver );
+        void priorityPropagation( Solver& solver );
         void propagation( Solver& solver );
         void postPropagation( Solver& solver );
         
@@ -194,6 +196,8 @@ class Variable
         Vector< pair< PostPropagator*, int > > postPropagators[ 2 ];
         
         Vector< pair< Propagator*, int > > propagators[ 2 ];
+        
+        Vector< pair< Propagator*, int > > priorityPropagators[ 2 ];
         
 //        uint64_t signature;
         

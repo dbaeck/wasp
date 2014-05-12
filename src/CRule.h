@@ -116,7 +116,7 @@ void
 CRule::attachCRule()
 {
     for( unsigned int i = 0; i < literals.size(); i++ )
-        literals[ i ].getOppositeLiteral().addPropagator( this, -1 );    
+        literals[ i ].getOppositeLiteral().addPriorityPropagator( this, -1 );    
 }
 
 bool

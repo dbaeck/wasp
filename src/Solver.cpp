@@ -86,7 +86,7 @@ Solver::unroll(
     assert_msg( !unrollVector.empty(), "There is nothing to unroll" );
     assert_msg( level < unrollVector.size(), "Level " << level << " is greater than unrollVector size " << unrollVector.size() );
     assert_msg( currentDecisionLevel >= level, "Level " << level << " is greater than current decision level " << currentDecisionLevel );
-    assert( "Vector for unroll is inconsistent" && variables.numberOfAssignedLiterals() >= unrollVector[ level ] );    
+    assert_msg( variables.numberOfAssignedLiterals() >= unrollVector[ level ], "Vector for unroll is inconsistent. AssignedLiterals: " << variables.numberOfAssignedLiterals() << " - UnrollVector: " << unrollVector[ level ]  );
     unsigned int toUnroll = variables.numberOfAssignedLiterals() - unrollVector[ level ];
     unsigned int toPop = currentDecisionLevel - level;
     
@@ -343,12 +343,22 @@ Solver::solvePropagators()
 }
 
 void
+Solver::priorityPropagation(
+    Variable* variable )
+{
+    assert( "Variable to propagate has not been set." && variable != NULL );
+    trace_msg( solving, 2, "Propagating: " << *variable << " as " << ( variable->isTrue() ? "true" : "false" ) );    
+    variable->priorityPropagation( *this );
+}
+
+void
 Solver::unitPropagation(
     Variable* variable )
 {
     assert( "Variable to propagate has not been set." && variable != NULL );
     trace_msg( solving, 2, "Propagating: " << *variable << " as " << ( variable->isTrue() ? "true" : "false" ) );
-    
+    if( conflictDetected() )
+        return;
     variable->unitPropagation( *this );
 }
 

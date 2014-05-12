@@ -162,6 +162,35 @@ Variable::propagation(
 }
 
 void
+Variable::priorityPropagation(
+    Solver& solver )
+{
+    assert( !solver.conflictDetected() );
+    assert_msg( !this->isUndefined(), "Propagating variable " << *this << ", the truth value is Undefined." );
+
+    assert( FALSE == 1 && TRUE == 2 );
+
+    #ifndef NDEBUG
+    unsigned int sign = ( getTruthValue() >> 1 );
+    assert( sign <= 1 );
+    assert( getTruthValue() == TRUE ? sign == NEGATIVE : sign == POSITIVE );
+    #endif
+    
+    Vector< pair< Propagator*, int > >& wl = priorityPropagators[ ( getTruthValue() >> 1 ) ];
+
+    Literal complement = Literal::createOppositeFromAssignedVariable( this );    
+    
+    for( unsigned i = 0; i < wl.size(); ++i )
+    {
+        if( solver.conflictDetected() )
+            break;
+        Propagator* propagator = wl[ i ].first;
+        assert( "Post propagator is null." && propagator != NULL );
+        propagator->onLiteralFalse( solver, complement, wl[ i ].second );        
+    }
+}
+
+void
 Variable::postPropagation(
     Solver& solver )
 {
