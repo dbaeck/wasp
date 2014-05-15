@@ -1403,51 +1403,69 @@ GringoNumericFormat::computeSCCs()
 //}
 
 void
+GringoNumericFormat::cruleToClause(
+    Clause* crule )
+{
+    assert( crule != NULL );
+    Literal lit = crule->getAt( 0 ).getOppositeLiteral();
+    if( !lit.isTrue() )
+    {
+        for( unsigned j = 1; j < crule->size(); ++j )
+        {
+            Literal lit2 = crule->getAt( j ).getOppositeLiteral();
+            if( lit2.isTrue() || crule->getAt( j ) == lit )
+                continue;
+            assert( lit.isUndefined() );
+            assert( lit2.isUndefined() );
+
+            Clause* bin = solver.newClause();
+            bin->addLiteral( lit );
+            bin->addLiteral( lit2 );
+            solver.addClause( bin );
+            assert( propagatedLiterals == solver.numberOfAssignedLiterals() );
+        }
+    }
+    solver.cleanAndAddClause( crule );
+    assert( propagatedLiterals == solver.numberOfAssignedLiterals() );
+}
+
+void
 GringoNumericFormat::computeCompletion()
 {
-    assert( propagatedLiterals == solver.numberOfAssignedLiterals() );    
+    assert( propagatedLiterals == solver.numberOfAssignedLiterals() );        
     for( unsigned i = 0; i < crules.size(); ++i )
     {
         CRule* crule = crules[ i ];        
-        trace_msg( parser, 3, "Considering crule " << *crule );
-        assert( crule != NULL );
-        Literal lit = crule->getAt( 0 );//.getOppositeLiteral();
-        crule->setCLiteral( lit );
-        
-        bool tautological = crule->removeDuplicateOfCliteral();
-        
-        if( crule->size() == 1 )
+        if( crule->size() <= wasp::Options::limitCrules )
         {
-            trace_msg( parser, 3, "Deleting crule " << *crule );
-            delete crule;
-            continue;
+            cruleToClause( crule );
         }
-        
-        if( !lit.isFalse() )//isTrue() )
-        {
-            crule->attachCRule();
-//            for( unsigned j = 1; j < crule->size(); ++j )
-//            {
-//                Literal lit2 = crule->getAt( j ).getOppositeLiteral();
-//                if( lit2.isTrue() || crule->getAt( j ) == lit )
-//                    continue;
-//                assert( lit.isUndefined() );
-//                assert( lit2.isUndefined() );
-//                   
-//                Clause* bin = solver.newClause();
-//                bin->addLiteral( lit );
-//                bin->addLiteral( lit2 );
-//                solver.addClause( bin );
-//                assert( propagatedLiterals == solver.numberOfAssignedLiterals() );
-//            }
-        }
-        
-        if( !tautological )
-            solver.cleanAndAddClause( crule );
         else
-            solver.addCRuleToDelete( crule );
+        {
+            trace_msg( parser, 3, "Considering crule " << *crule );
+            assert( crule != NULL );
+            Literal lit = crule->getAt( 0 );//.getOppositeLiteral();
+            crule->setCLiteral( lit );
 
-        assert( propagatedLiterals == solver.numberOfAssignedLiterals() );
+            bool tautological = crule->removeDuplicateOfCliteral();
+
+            if( crule->size() == 1 )
+            {
+                trace_msg( parser, 3, "Deleting crule " << *crule );
+                delete crule;
+                continue;
+            }
+
+            if( !lit.isFalse() )
+                crule->attachCRule();
+            
+            if( !tautological )
+                solver.cleanAndAddClause( crule );
+            else
+                solver.addCRuleToDelete( crule );
+
+            assert( propagatedLiterals == solver.numberOfAssignedLiterals() );
+        }
     }    
 }
 

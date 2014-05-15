@@ -79,6 +79,7 @@ namespace wasp
 #define OPTIONID_stdin ( 'z' + 100 )
 #define OPTIONID_time_limit ( 'z' + 101 )
 #define OPTIONID_max_cost ( 'z' + 102 )
+#define OPTIONID_limit_crules ( 'z' + 103 )
     
 #ifdef TRACE_ON
 TraceLevels Options::traceLevels;
@@ -113,6 +114,8 @@ unsigned int Options::maxModels = 1;
 unsigned int Options::deletionThreshold = 8;
 
 unsigned int Options::maxCost = MAXUNSIGNEDINT;
+
+unsigned int Options::limitCrules = 0;
     
 void
 Options::parse(
@@ -178,6 +181,7 @@ Options::parse(
                 { "stdin", no_argument, NULL, OPTIONID_stdin },
                 { "time-limit", required_argument, NULL, OPTIONID_time_limit },
                 { "max-cost", required_argument, NULL, OPTIONID_max_cost },
+                { "rewrite-crules", required_argument, NULL, OPTIONID_limit_crules },
 
                 // The NULL-option indicates the end of the array.
                 { NULL, 0, NULL, 0 }
@@ -365,6 +369,11 @@ Options::parse(
             case OPTIONID_max_cost:
                 if( optarg )
                     maxCost = atoi( optarg );
+                break;
+                
+            case OPTIONID_limit_crules:
+                if( optarg )
+                    limitCrules = atoi( optarg );
                 break;
 
             default:

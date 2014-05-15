@@ -292,6 +292,8 @@ private:
     void computeGusStructures();
     void computeSCCs();
     void computeCompletion();
+    void cruleToClause( Clause* clause );
+    
     void simplify();
     void removeSatisfiedLiterals( WeightConstraintRule* );
     
