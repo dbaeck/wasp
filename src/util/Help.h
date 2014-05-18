@@ -70,11 +70,11 @@ class Help
             
             cout << "Query options                          " << endl << endl;            
             cout << "--query-algorithm                      - Enable algorithms for cautious reasoning." << endl;
-            cout << "       = 1                             - Enumeration algorithm." << endl;
-            cout << "       = 2                             - Models-based algorithm." << endl;
-            cout << "       = 3                             - Iterative algorithm." << endl;
-            cout << "       = 4                             - Underestimate increase algorithm." << endl;
-            cout << "       = 5                             - Underestimate increase algorithm disabling first model search." << endl;
+            cout << "       = 1                             - Enumeration of models." << endl;
+            cout << "       = 2                             - Overestimate reduction." << endl;
+            cout << "       = 3                             - Iterative coherence testing." << endl;
+            cout << "       = 4                             - Iterative partial coherence testing." << endl;
+            cout << "       = 5                             - Iterative partial coherence testing disabling first model search." << endl;
             cout << "--query-verbosity                      - Select the verbosity of query algorithms." << endl;
             cout << "--disable-anytime                      - Disable the anytime prints." << endl;
             cout << "--multi                                - Enable the multi algorithm for queries." << endl;
