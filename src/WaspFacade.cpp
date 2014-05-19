@@ -170,7 +170,7 @@ WaspFacade::solveQueryModelBased()
 void
 WaspFacade::solveQueryUnderestimateIncrease()
 {
-    assert( solver.underestimateIncreaseAlgorithm() );
+    assert( solver.underestimateIncreaseAlgorithm() || solver.iterativeApproachForQuery() );
     solver.init();
     
     if( solver.preprocessing() )
@@ -191,8 +191,12 @@ WaspFacade::solveQueryUnderestimateIncrease()
                 diff = diff + ( upperEstimateSize - solver.upperEstimateSize() );
                 upperEstimateSize = solver.upperEstimateSize();
                 solver.printUpperEstimate();
-                solver.doRestart();
-                solver.simplifyOnRestart();
+
+                if( solver.upperEstimateSize() != 0 )
+                {
+                    solver.doRestart();
+                    solver.simplifyOnRestart();
+                }
                 solver.clearConflictStatus();
             }
             else
