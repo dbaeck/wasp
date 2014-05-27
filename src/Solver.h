@@ -86,8 +86,9 @@ class Solver
         inline void incrementCurrentDecisionLevel();
         
         inline void assignLiteral( Literal literal );
-        inline void assignLiteral( Clause* implicant );
-        inline void assignLiteral( Literal literal, Clause* implicant );
+        inline void assignLiteral( ClausePropagator* implicant );
+        inline void assignLiteral( Variable* var, ClausePropagator* clause );
+        inline void assignLiteral( Literal literal, ClausePropagator* implicant );
         
         inline bool propagateLiteralAsDeterministicConsequence( Literal literal );
         inline bool propagateLiteralAsDeterministicConsequenceSatelite( Literal literal );
@@ -230,7 +231,7 @@ class Solver
         vector< unsigned int > unrollVector;
         
         Literal conflictLiteral;
-        Clause* conflictClause;
+        ClausePropagator* conflictClause;
         
         Learning learning;
         OutputBuilder* outputBuilder;        
@@ -256,6 +257,9 @@ class Solver
         
         vector< GUSData* > gusDataVector;
         vector< Aggregate* > aggregates;
+        
+        vector< Literal* > positiveLiterals;
+        vector< Literal* > negativeLiterals;
         
         Aggregate* optimizationAggregate;
         unsigned int numberOfOptimizationLevels;
@@ -319,6 +323,8 @@ Solver::Solver()
 {
     satelite = new Satelite( *this );
     deletionCounters.init();
+    positiveLiterals.push_back( NULL );
+    negativeLiterals.push_back( NULL );
 }
 
 void
@@ -340,6 +346,16 @@ Solver::addVariableInternal()
     minisatHeuristic.onNewVariable( variable );
     learning.onNewVariable();
 //    satelite->onAddingVariable( variable );
+    
+    Literal* posLit = new Literal( variable, POSITIVE );
+    Literal* negLit = new Literal( variable, NEGATIVE );
+    
+    assert( positiveLiterals.size() == variable->getId() );
+    assert( negativeLiterals.size() == variable->getId() );
+    
+    positiveLiterals.push_back( posLit );
+    negativeLiterals.push_back( negLit );
+    
     return variable;
 }
 
@@ -393,7 +409,7 @@ Solver::assignLiteral(
 
 void
 Solver::assignLiteral(
-    Clause* implicant )
+    ClausePropagator* implicant )
 {
     assert( implicant != NULL );
     assert( !conflictDetected() );
@@ -406,8 +422,16 @@ Solver::assignLiteral(
 
 void
 Solver::assignLiteral(
+    Variable* var,
+    ClausePropagator* clause )
+{
+    ( var->isTrue() ) ? assignLiteral( clause->getAt( 0 ), negativeLiterals[ var->getId() ] ) : assignLiteral( clause->getAt( 0 ), positiveLiterals[ var->getId() ] );    
+}
+
+void
+Solver::assignLiteral(
     Literal lit,
-    Clause* implicant )
+    ClausePropagator* implicant )
 {
     assert( implicant != NULL );
     
@@ -860,9 +884,19 @@ Solver::attachWatches()
 {
     for( unsigned int i = 0; i < clauses.size(); )
     {
-        Clause* current = clauses[ i ];
+        Clause* current = clauses[ i ];        
         if( current->hasBeenDeleted() )
         {
+            deleteClause( current );
+        }
+        else if( current->size() == 2 )
+        {
+            int id1 = current->getAt( 0 ).getId();
+            int id2 = current->getAt( 1 ).getId();            
+            
+            current->getAt( 0 ).addWatchedClause( id2 < 0 ? negativeLiterals[ -id2 ] : positiveLiterals[ id2 ] );
+            current->getAt( 1 ).addWatchedClause( id1 < 0 ? negativeLiterals[ -id1 ] : positiveLiterals[ id1 ] );                        
+            
             deleteClause( current );
         }
         else

@@ -26,6 +26,7 @@
 using namespace std;
 
 class Clause;
+class ClausePropagator;
 class Literal;
 class Solver;
 class Variable;
@@ -40,7 +41,7 @@ class Learning
         void onNavigatingLiteralForUnfoundedSetLearning( Literal );
         
         bool onNavigatingLiteralForAllMarked( Literal );
-        Clause* onConflict( Literal conflictLiteral, Clause* conflictClause );
+        Clause* onConflict( Literal conflictLiteral, ClausePropagator* conflictClause );
         
         inline void onNewVariable();
         
@@ -87,7 +88,7 @@ class Learning
         Literal getNextLiteralToNavigate();
         
         void simplifyLearnedClause( Clause* lc );
-        bool allMarked( Clause* clause, Literal literal );
+        bool allMarked( ClausePropagator* clause, Literal literal );
         
         #ifndef NDEBUG
         /**

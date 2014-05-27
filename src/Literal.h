@@ -28,9 +28,12 @@ using namespace std;
 #include "util/Constants.h"
 #include "Variable.h"
 
+#include "ClausePropagator.h"
+#include "Learning.h"
+
 class Clause;
 
-class Literal
+class Literal : public ClausePropagator
 {
     friend ostream &operator<<( ostream &, const Literal & );
 
@@ -57,8 +60,8 @@ class Literal
         inline bool operator==( const Literal& ) const;
         inline bool operator!=( const Literal& ) const;
 
-        inline void addWatchedClause( Clause* clause );
-        inline void findAndEraseWatchedClause( Clause* clauses );
+        inline void addWatchedClause( ClausePropagator* clause );
+        inline void findAndEraseWatchedClause( ClausePropagator* clauses );
 
         inline void addClause( Clause* clause );
         inline void findAndEraseClause( Clause* clauses );   
@@ -68,7 +71,7 @@ class Literal
         
         inline unsigned int getDecisionLevel() const;
 
-        inline bool isImplicant( const Clause* clause ) const;
+        inline bool isImplicant( const ClausePropagator* clause ) const;
         
 //        inline void onLearning( Learning* strategy );
 
@@ -93,6 +96,23 @@ class Literal
         inline bool isNegative() const { return !isPositive(); }
         
         inline void checkSubsumptionForClause( Solver& solver, Clause* clause ) { getVariable()->checkSubsumptionForClause( solver, clause, getSign() ); }
+        
+        inline bool onLiteralFalse( Literal )
+        {
+            if( this->isTrue() )
+                return false;
+            return true;
+        }
+        
+        inline void onLearning( Learning* strategy, Literal ) { strategy->onNavigatingLiteral( *this ); }
+        
+        inline bool onNavigatingLiteralForAllMarked( Learning* strategy, Literal ) { return strategy->onNavigatingLiteralForAllMarked( *this ); }
+        
+        inline Literal getAt( unsigned int i ) const { return ( i == 0 ) ? *this : Literal::null; }
+        
+        inline ClausePropagator* getReason() { return NULL; }
+        
+        virtual ostream& print( ostream& out ) const { return out << *this; }
 
     private:
         
@@ -215,7 +235,7 @@ Literal::getDecisionLevel() const
 
 bool
 Literal::isImplicant(
-    const Clause* clause ) const
+    const ClausePropagator* clause ) const
 {
     assert_msg( getVariable() != NULL, "Variable has not been set." );
     return getVariable()->isImplicant( clause );
@@ -259,7 +279,7 @@ Literal::numberOfOccurrences() const
 
 void
 Literal::addWatchedClause(
-    Clause* clause )
+    ClausePropagator* clause )
 {
     assert( "Variable has not been set." && getVariable() != NULL );
     getVariable()->addWatchedClause( clause, getSign() );
@@ -267,7 +287,7 @@ Literal::addWatchedClause(
 
 void
 Literal::findAndEraseWatchedClause(
-    Clause* clause )
+    ClausePropagator* clause )
 {
     assert( "Variable has not been set." && getVariable() != NULL );
     getVariable()->findAndEraseWatchedClause( clause, getSign() );

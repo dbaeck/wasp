@@ -100,19 +100,23 @@ Variable::unitPropagation(
     assert( getTruthValue() == TRUE ? sign == NEGATIVE : sign == POSITIVE );
     #endif
     
-    WatchedList< Clause* >& wl = watchedLists[ ( getTruthValue() >> 1 ) ];
+    WatchedList< ClausePropagator* >& wl = watchedLists[ ( getTruthValue() >> 1 ) ];
 
     Literal complement = Literal::createOppositeFromAssignedVariable( this );
 
     unsigned j = 0;
     for( unsigned i = 0; i < wl.size(); ++i )
     {
-        Clause* clause = wl[ j ] = wl[ i ];
+        ClausePropagator* clause = wl[ j ] = wl[ i ];
         assert( "Next clause to propagate is null." && clause != NULL );
         trace( solving, 5, "Considering clause %s.\n", toString( *clause ).c_str() );
         if( clause->onLiteralFalse( complement ) )
         {
-            solver.assignLiteral( clause );
+            if( clause->getReason() == NULL )
+                solver.assignLiteral( this, clause );
+            else
+                solver.assignLiteral( clause );
+
             if( solver.conflictDetected() )
             {
                 while( i < wl.size() )
@@ -121,7 +125,7 @@ Variable::unitPropagation(
             }
             ++j;
         }
-        else if( clause->getAt( 1 ) == complement )
+        else if( clause->getReason() == NULL || clause->getAt( 1 ) == complement )
         {
             assert( !solver.conflictDetected() );
             ++j;

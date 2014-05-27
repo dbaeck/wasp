@@ -38,10 +38,10 @@ enum SubsumptionData { NO_SUBSUMPTION = 0, SUBSUMPTION = 1, SELFSUBSUMPTION = 2 
  *  For example (a1 v a2 v not a3) is a clause and a1, a2 are positive literals and not a3 is a negative literal.
  * 
  */
-class Clause
+class Clause : public ClausePropagator
 {
     friend ostream &operator<<( ostream & out, const Clause & clause );
-    friend Clause* Learning::onConflict( Literal conflictLiteral, Clause* conflictClause );
+    friend Clause* Learning::onConflict( Literal conflictLiteral, ClausePropagator* conflictClause );
     friend Clause* Learning::learnClausesFromUnfoundedSet( Vector< Variable* >& unfoundedSet );
 
     public:        
@@ -71,7 +71,7 @@ class Clause
         virtual void onLearning( Learning* strategy, Literal lit );
         virtual bool onNavigatingLiteralForAllMarked( Learning* strategy, Literal lit );
         inline bool onLiteralFalse( Literal literal );
-        inline void onRemovingNoDelete( Literal literal );
+        inline void onRemovingNoDelete( Literal literal );        
 
         inline unsigned int size() const;
 //        inline bool checkUnsatisfiedAndOptimize( Heuristic* collector );
@@ -125,6 +125,8 @@ class Clause
         
         bool allUndefined() const;
         bool isTautology() const;
+        
+        ClausePropagator* getReason(){ return this; }
         
     protected:
         vector< Literal > literals;

@@ -70,6 +70,20 @@ Solver::~Solver()
     
     if( optimizationAggregate != NULL )
         delete optimizationAggregate;
+    
+    while( !positiveLiterals.empty() )
+    {
+        if( positiveLiterals.back() != NULL )
+            delete positiveLiterals.back();
+        positiveLiterals.pop_back();
+    }
+    
+    while( !negativeLiterals.empty() )
+    {
+        if( negativeLiterals.back() != NULL )
+            delete negativeLiterals.back();
+        negativeLiterals.pop_back();
+    }
 }
 
 void

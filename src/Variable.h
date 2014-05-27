@@ -24,6 +24,7 @@
 #include "util/Constants.h"
 #include "WatchedList.h"
 #include "util/Assert.h"
+#include "ClausePropagator.h"
 
 //#include <boost/heap/fibonacci_heap.hpp>
 using namespace std;
@@ -79,10 +80,10 @@ class Variable
         inline void setUndefined();
         inline void setUndefinedBrutal();
 
-        inline bool isImplicant( const Clause* clause ) const;
+        inline bool isImplicant( const ClausePropagator* clause ) const;
         inline bool hasImplicant() const;
-        inline Clause* getImplicant() const { return implicant; }
-        inline void setImplicant( Clause* clause );
+        inline ClausePropagator* getImplicant() const { return implicant; }
+        inline void setImplicant( ClausePropagator* clause );
 
         inline unsigned int getDecisionLevel() const;
         inline void setDecisionLevel( unsigned int decisionLevel );
@@ -92,8 +93,8 @@ class Variable
 
 //        void onLearning( Learning* strategy );
         
-        inline void addWatchedClause( Clause* clause, unsigned int sign );        
-        inline void findAndEraseWatchedClause( Clause* clause, unsigned int sign );
+        inline void addWatchedClause( ClausePropagator* clause, unsigned int sign );        
+        inline void findAndEraseWatchedClause( ClausePropagator* clause, unsigned int sign );
         
         inline void addClause( Clause* clause, unsigned int sign );
         inline void findAndEraseClause( Clause* clause, unsigned int sign );
@@ -173,13 +174,13 @@ class Variable
         /**
          * This variable stores the clause which derived the literal.
          */
-        Clause* implicant;
+        ClausePropagator* implicant;
         
         /**
          * Position POSITIVE of this vector contains the watchedList of the positive literal associated with this variable.
          * Position NEGATIVE of this vector contains the watchedList of the negative literal associated with this variable.
          */
-        WatchedList< Clause* > watchedLists[ 2 ];
+        WatchedList< ClausePropagator* > watchedLists[ 2 ];
         
         /**
          * Position POSITIVE of this vector contains the occurrences of the positive literal associated with this variable.
@@ -293,7 +294,7 @@ Variable::setUndefinedBrutal()
 
 bool
 Variable::isImplicant( 
-    const Clause* clause ) const
+    const ClausePropagator* clause ) const
 {
     return !this->isUndefined() && implicant == clause;
 }
@@ -306,7 +307,7 @@ Variable::hasImplicant() const
 
 void
 Variable::setImplicant(
-    Clause* clause )
+    ClausePropagator* clause )
 {
     implicant = clause;
 }
@@ -338,7 +339,7 @@ Variable::getCachedTruthValue() const
 
 void
 Variable::addWatchedClause(
-    Clause* clause,
+    ClausePropagator* clause,
     unsigned int sign )
 {
     assert_msg( sign <= 1, "The sign must be 0 or 1. Found value " << sign );
@@ -347,7 +348,7 @@ Variable::addWatchedClause(
 
 void
 Variable::findAndEraseWatchedClause( 
-    Clause* clause,
+    ClausePropagator* clause,
     unsigned int sign )
 {
     assert_msg( sign <= 1, "The sign must be 0 or 1. Found value " << sign );
