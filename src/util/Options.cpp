@@ -76,6 +76,7 @@ namespace wasp
 
 /* INPUT OPTIONS */
 #define OPTIONID_dimacs ( 'z' + 90 )
+#define OPTIONID_file ('z' + 91)
 
 /* GENERIC OPTIONS */
 #define OPTIONID_stdin ( 'z' + 100 )
@@ -136,6 +137,9 @@ bool Options::exchangeClauses = false;
 WEAK_CONSTRAINTS_ALG Options::weakConstraintsAlg = OLL;
 
 bool Options::disjCoresPreprocessing = false;
+
+string Options::fileName;
+bool Options::hasInputFile = false;
     
 void
 Options::parse(
@@ -196,7 +200,8 @@ Options::parse(
 //                { "glucose-deletion", optional_argument, NULL, OPTIONID_glucose_deletion },
                 
                 /* INPUT OPTIONS */
-                { "dimacs", no_argument, NULL, OPTIONID_dimacs },                
+                { "dimacs", no_argument, NULL, OPTIONID_dimacs },
+                { "file", required_argument, NULL, OPTIONID_file },
                 
                 /* GENERIC OPTIONS*/
                 { "help", no_argument, NULL, OPTIONID_help },
@@ -392,7 +397,12 @@ Options::parse(
 
             case OPTIONID_dimacs:
                 outputPolicy = DIMACS_OUTPUT;
-                break; 
+                break;
+
+            case OPTIONID_file:
+                hasInputFile = true;
+                fileName.assign(optarg);
+                break;
                 
             case OPTIONID_help:
                 Help::printHelp();
@@ -487,6 +497,8 @@ Options::setOptions(
     waspFacade.setExchangeClauses( exchangeClauses );
     waspFacade.setWeakConstraintsAlgorithm( weakConstraintsAlg );
     waspFacade.setDisjCoresPreprocessing( disjCoresPreprocessing );
+    waspFacade.fileName = fileName;
+    waspFacade.hasInputFile = hasInputFile;
 }
 
 };

@@ -61,7 +61,10 @@ class WaspFacade
         inline void setWeakConstraintsAlgorithm( WEAK_CONSTRAINTS_ALG alg ) { weakConstraintsAlg = alg; }
         inline void setDisjCoresPreprocessing( bool value ) { disjCoresPreprocessing = value; }
         
-        inline unsigned int solveWithWeakConstraints();        
+        inline unsigned int solveWithWeakConstraints();
+    
+        bool hasInputFile;
+        string fileName;
 
     private:
         Solver solver;

@@ -74,6 +74,9 @@ namespace wasp
             static WEAK_CONSTRAINTS_ALG weakConstraintsAlg;
             
             static bool disjCoresPreprocessing;
+        
+            static string fileName;
+            static bool hasInputFile;
     };
 }
 

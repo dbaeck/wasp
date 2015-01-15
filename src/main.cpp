@@ -57,7 +57,12 @@ int main( int argc, char** argv )
 
     wasp::Options::parse( argc, argv );    
     WaspFacade waspFacade;     
-    wasp::Options::setOptions( waspFacade );        
+    wasp::Options::setOptions( waspFacade );      
+
+    if(waspFacade.hasInputFile)
+        if(!freopen(waspFacade.fileName.c_str(), "r", stdin))
+            cout << "Specified inputfile not found" << endl;
+
     try
     {
         SignalHandler signalHandler;
