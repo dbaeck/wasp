@@ -53,6 +53,8 @@ class SignalHandler
 
 int main( int argc, char** argv )
 {
+    cout << "WASP Trace & Debug Mode - Optimization Branch" << endl;
+
     wasp::Options::parse( argc, argv );    
     WaspFacade waspFacade;     
     wasp::Options::setOptions( waspFacade );        

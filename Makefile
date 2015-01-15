@@ -2,13 +2,13 @@
 # use 
 #   $ make BUILD=release 
 # to compile different binaries
-BUILD = release
+BUILD = trace
 cxxflags.debug = \
- -Wall -Wextra -std=c++11
+ -Wall -Wextra -std=c++11 -g
 linkflags.debug = \
  -lm
 cxxflags.trace = \
- -Wall -Wextra -std=c++11 -DTRACE_ON
+ -Wall -Wextra -std=c++11 -DTRACE_ON -g
 linkflags.trace = \
  -lm
 cxxflags.release = \
@@ -53,7 +53,7 @@ BUILD_DIR = build/$(BUILD)
 BINARY = $(BUILD_DIR)/wasp
 GCC = g++
 CXX = $(GCC)
-CXXFLAGS = $(cxxflags.$(BUILD))
+CXXFLAGS = $(cxxflags.$(BUILD)) -I/usr/local/Cellar/boost/1.55.0_1/include/
 LINK = $(GCC)
 LINKFLAGS = $(linkflags.$(BUILD))
 
