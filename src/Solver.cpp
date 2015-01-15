@@ -22,6 +22,8 @@
 #include <algorithm>
 #include <stdint.h>
 #include <vector>
+#include "util/VariableNames.h"
+
 using namespace std;
 
 vector< Clause* > Solver::learnedFromAllSolvers;
@@ -216,12 +218,33 @@ Solver::addClauseFromModelAndRestart()
     return addClauseFromModel( clause );
 }
 
+void
+Solver::traceVariables(string comment)
+{
+    trace(debugging, 1, "\033[1;31m\n")
+    trace(debugging, 1, "### Variable Trace (%s):\n", comment.c_str());
+    trace(debugging, 1, "\tNumber of assigned Variables %d\n",this->variables.numberOfAssignedLiterals());
+    for(int i = 0; i< this->variables.numberOfAssignedLiterals(); i++)
+    {
+        Var v = this->variables.getAssignedVariable(i);
+        bool t = this->variables.isTrue(v);
+        bool f = this->variables.isFalse(v);
+        bool u = this->variables.isUndefined(v);
+        string val = t?"true":"" + f?"false":"" + u?"undefined":"";
+        
+        string n = VariableNames::getName(v);
+        trace(debugging, 1, "\t%s(%d): %s\n", n.c_str() , v, val.c_str());
+    }
+    trace(debugging, 1, "\033[0m\n")
+}
+
 unsigned int 
 Solver::solveWithoutPropagators(
     vector< Literal >& assumptionsAND,
     vector< Literal >& assumptionsOR )
 {
     trace( solving, 1, "Starting solving.\n" );
+    this->traceVariables("Solve without Propagators");
     
     if( hasNextVariableToPropagate() )
         goto propagationLabel;
@@ -306,7 +329,8 @@ Solver::solvePropagators(
     vector< Literal >& assumptionsAND,
     vector< Literal >& assumptionsOR )
 {
-    trace( solving, 1, "Starting solving.\n" );    
+    trace( solving, 1, "Starting solving.\n" );
+    this->traceVariables("Solve Propagators");
     if( hasNextVariableToPropagate() )
         goto propagationLabel;
     

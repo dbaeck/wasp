@@ -47,6 +47,7 @@ namespace wasp
 #define OPTIONID_trace_satelite ( 'z' + 8 )
 #define OPTIONID_trace_aggregates ( 'z' + 9 )
 #define OPTIONID_trace_weakconstraints ( 'z' + 10 )
+#define OPTIONID_trace_debugging ('z' + 11)
 
 /* OUTPUT OPTIONS */
 #define OPTIONID_silent ( 'z' + 20 )
@@ -172,6 +173,7 @@ Options::parse(
                 { "trace-satelite", required_argument, NULL, OPTIONID_trace_satelite },
                 { "trace-aggregates", required_argument, NULL, OPTIONID_trace_aggregates },
                 { "trace-weakconstraints", required_argument, NULL, OPTIONID_trace_weakconstraints },
+                { "trace-debugging", required_argument, NULL, OPTIONID_trace_debugging },
 
                 /* OUTPUT OPTIONS */
                 { "competition-output", no_argument, NULL, OPTIONID_competition_output },
@@ -285,6 +287,10 @@ Options::parse(
             
             case OPTIONID_trace_weakconstraints:
                 setTraceLevel( weakconstraints, atoi( optarg ) );
+                break;
+                
+            case OPTIONID_trace_debugging:
+                setTraceLevel( debugging, atoi( optarg ) );
                 break;
 
             case OPTIONID_competition_output:

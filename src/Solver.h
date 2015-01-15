@@ -381,6 +381,7 @@ class Solver
         inline unsigned int numberOfHCComponents() const { return hcComponents.size(); }
         
         inline void printInterpretation() const { variables.printInterpretation(); }
+        void traceVariables(string comment); //More Verbose printInterpretation
         inline void setHCComponentForChecker( HCComponent* hc ) { assert( hcComponentForChecker == NULL ); hcComponentForChecker = hc; }
         
         inline void onLearningALoopFormulaFromModelChecker() { learnedFromPropagators++; }
