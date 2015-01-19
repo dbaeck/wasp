@@ -78,6 +78,7 @@ namespace wasp
 /* INPUT OPTIONS */
 #define OPTIONID_dimacs ( 'z' + 90 )
 #define OPTIONID_file ('z' + 91)
+#define OPTIONID_assumptions ('z' + 92)
 
 /* GENERIC OPTIONS */
 #define OPTIONID_stdin ( 'z' + 100 )
@@ -109,6 +110,7 @@ DELETION_POLICY Options::deletionPolicy = RESTARTS_BASED_DELETION_POLICY;
 DECISION_POLICY Options::decisionPolicy = HEURISTIC_BERKMIN;
 
 vector< const char* > Options::inputFiles;
+vector<int> Options::assumptions;
 
 //unsigned int Options::decisionThreshold = UINT_MAX;
 unsigned int Options::decisionThreshold = 512;
@@ -204,6 +206,7 @@ Options::parse(
                 /* INPUT OPTIONS */
                 { "dimacs", no_argument, NULL, OPTIONID_dimacs },
                 { "file", required_argument, NULL, OPTIONID_file },
+                { "assumptions", required_argument, NULL, OPTIONID_assumptions },
                 
                 /* GENERIC OPTIONS*/
                 { "help", no_argument, NULL, OPTIONID_help },
@@ -410,6 +413,10 @@ Options::parse(
                 fileName.assign(optarg);
                 break;
                 
+            case OPTIONID_assumptions:
+                assumptions.push_back(atoi(optarg));
+                break;
+                
             case OPTIONID_help:
                 Help::printHelp();
                 exit( 0 );
@@ -505,6 +512,7 @@ Options::setOptions(
     waspFacade.setDisjCoresPreprocessing( disjCoresPreprocessing );
     waspFacade.fileName = fileName;
     waspFacade.hasInputFile = hasInputFile;
+    waspFacade.assumptions = assumptions;
 }
 
 };

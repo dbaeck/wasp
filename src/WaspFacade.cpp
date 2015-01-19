@@ -77,7 +77,7 @@ WaspFacade::solve()
         solver.printProgram();
         return;
     }   
-    
+    solver.traceVariables("After Input  Parsing");
     if( solver.preprocessing() )
     {
         if( printDimacs )
@@ -85,10 +85,18 @@ WaspFacade::solve()
             solver.printDimacs();
             return;
         }
+        solver.traceVariables("After Preprocessing");
         
         if( !solver.isOptimizationProblem() )
-        {            
-            while( solver.solve() == COHERENT )
+        {
+            vector< Literal > assumptionsAND;
+            vector< Literal > assumptionsOR;
+            
+            //Add assumptions from argument
+            for(size_t i = 0; i<assumptions.size(); i++)
+                assumptionsAND.push_back(Literal(assumptions[i]));
+            
+            while( solver.solve(assumptionsAND, assumptionsOR) == COHERENT )
             {
                 solver.printAnswerSet();
                 trace_msg( enumeration, 1, "Model number: " << numberOfModels + 1 );

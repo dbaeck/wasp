@@ -65,6 +65,7 @@ class WaspFacade
     
         bool hasInputFile;
         string fileName;
+        vector<int> assumptions;
 
     private:
         Solver solver;

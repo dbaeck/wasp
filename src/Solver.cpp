@@ -224,13 +224,14 @@ Solver::traceVariables(string comment)
     trace(debugging, 1, "\033[1;31m\n")
     trace(debugging, 1, "### Variable Trace (%s):\n", comment.c_str());
     trace(debugging, 1, "\tNumber of assigned Variables %d\n",this->variables.numberOfAssignedLiterals());
-    for(int i = 0; i< this->variables.numberOfAssignedLiterals(); i++)
+    for(unsigned int i = 0; i< this->variables.numberOfAssignedLiterals(); i++)
     {
         Var v = this->variables.getAssignedVariable(i);
         bool t = this->variables.isTrue(v);
         bool f = this->variables.isFalse(v);
         bool u = this->variables.isUndefined(v);
-        string val = t?"true":"" + f?"false":"" + u?"undefined":"";
+        string val = string(t?"true":"") + string(f?"false":"") + string
+        (u?"undefined":"");
         
         string n = VariableNames::getName(v);
         trace(debugging, 1, "\t%s(%d): %s\n", n.c_str() , v, val.c_str());
@@ -292,6 +293,7 @@ Solver::solveWithoutPropagators(
 
             if( conflictDetected() )
             {
+                this->traceVariables("Conflict Detected");
                 trace( solving, 1, "Conflict detected.\n" );
                 if( getCurrentDecisionLevel() == 0 )
                 {
@@ -361,6 +363,7 @@ Solver::solvePropagators(
             conflict:;
             if( conflictDetected() )
             {
+                this->traceVariables("Conflict Detected");
                 learnedFromConflicts++;
                 trace( solving, 1, "Conflict detected.\n" );
                 if( getCurrentDecisionLevel() == 0 )
@@ -455,7 +458,7 @@ Solver::solvePropagators(
                     }                    
                     onLearning( clauseToPropagate );
                 }
-                
+//                this->traceVariables("Post Propagation");
                 if( conflictDetected() )
                     goto conflict;
                 else
@@ -498,6 +501,8 @@ Solver::shortPropagation(
             assignLiteral( lit, variables.getReasonForBinaryClauses( variable ) );
         }
     }
+    
+    this->traceVariables("Propagation");
 }
 
 void
@@ -537,6 +542,8 @@ Solver::unitPropagation(
             assert( !conflictDetected() );
     }
     wl.shrink( j );
+    
+//    this->traceVariables("Unit Propagation");
 }
 
 void
@@ -559,6 +566,7 @@ Solver::propagation(
         if( res )
             addInPropagatorsForUnroll( propagator );
     }
+    
 }
 
 void

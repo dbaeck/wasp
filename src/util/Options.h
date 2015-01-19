@@ -77,6 +77,8 @@ namespace wasp
         
             static string fileName;
             static bool hasInputFile;
+        
+            static vector<int> assumptions;
     };
 }
 
