@@ -1541,10 +1541,13 @@ Solver::clearComponents()
 bool
 Solver::preprocessing()
 {
+    bool retval = true;
     if( conflictDetected() )
     {
+        trace(debugging, 1, "Conflict Literal %d\n", conflictLiteral.getVariable());
         trace( solving, 1, "Conflict at level 0.\n" );
-        return false;
+      
+        retval = false;
     }    
 
     statistics( this, beforePreprocessing( numberOfVariables(), numberOfAssignedLiterals(), numberOfClauses() ) );
@@ -1566,7 +1569,9 @@ Solver::preprocessing()
     callSimplifications_ = false;
     statistics( this, afterPreprocessing( numberOfAssignedLiterals(), numberOfClauses() ) );
 
-    return true;
+    trace(debugging, 1, "Conflict Literal %d\n", conflictLiteral.getVariable());
+    
+    return retval;
 }
 
 void
